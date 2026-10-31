@@ -7,7 +7,7 @@
 //   node vsm.mjs patch    <map.json> --ops '<json array>'  (apply changes, validate, write only if valid)
 //   node vsm.mjs detail   <map.json> --stage <id> --steps '<json>' [--to <sub-step id>]
 //   node vsm.mjs summary  <map.json> [--text]              (the figures a page shows: totals, per stage, gaps; JSON by default)
-//   node vsm.mjs embed    <map.json> --page <page.html>    (put the map's data into the page, replacing any previous copy)
+//   node vsm.mjs embed    <map.json> --page <page.html>    (put the map and its figures into the page, replacing any previous copy)
 //   node vsm.mjs import   <page.html> --output <map.json> [--force]   (take the map back out of a page)
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, statSync, renameSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -202,6 +202,8 @@ function summarize(data) {
       reworkOut: loops.filter((l) => l.from === s.id && !(l.to === s.id && (l.toStep || '') === (l.fromStep || ''))).length,
       iterations: loops.filter((l) => l.from === s.id && l.to === s.id && (l.toStep || '') === (l.fromStep || '')).length,
       aiUses: (s.ai || []).length + st.reduce((m, x) => m + (x.ai || []).length, 0),
+      noDurations: boxes.every((x) => !x.work && !x.wait),
+      batches: boxes.filter((x) => x.batch).map((x) => x.batch),
     };
   });
   const lead = work + wait;
@@ -214,13 +216,20 @@ function summarize(data) {
   const rolled = cas.length ? Math.round(cas.reduce((m, v) => (m * v) / 100, 1) * 100) : null;
   const ai = {}; stages.forEach((s) => [s, ...(s.steps || [])].forEach((x) => (x.ai || []).forEach((a) => { ai[a.level] = (ai[a.level] || 0) + 1; })));
   const markers = {}; stages.forEach((s) => [s, ...(s.steps || [])].forEach((x) => (x.markers || []).forEach((m) => { markers[m.kind] = (markers[m.kind] || 0) + 1; })));
+  // Items to confirm, as data (the page writes them in its own words and language).
   const toConfirm = [];
   stages.forEach((s) => [s, ...(s.steps || [])].forEach((x) => {
-    const where = x === s ? s.name : `${s.name} › ${x.name}`;
-    (x.ai || []).forEach((a) => a.confirm && toConfirm.push(`${where}: AI use "${a.label}"`));
-    (x.markers || []).forEach((m) => m.confirm && toConfirm.push(`${where}: ${m.kind} "${m.text}"`));
+    const at = { stage: s.id, step: x === s ? null : x.id };
+    (x.ai || []).forEach((a) => a.confirm && toConfirm.push({ ...at, type: 'ai', text: a.label }));
+    (x.markers || []).forEach((m) => m.confirm && toConfirm.push({ ...at, type: 'marker', kind: m.kind, text: m.text }));
   }));
-  loops.forEach((l) => l.confirm && toConfirm.push(`loop ${l.id || ''} ${l.from}${l.fromStep ? '/' + l.fromStep : ''} → ${l.to}${l.toStep ? '/' + l.toStep : ''}`));
+  loops.forEach((l) => l.confirm && toConfirm.push({ type: 'loop', id: l.id || null, from: l.from, fromStep: l.fromStep || null, to: l.to, toStep: l.toStep || null, text: l.label || '' }));
+  // Boxes still missing a time, by id, so the page can point at them.
+  const missing = { work: [], wait: [] };
+  stages.forEach((s) => ((s.steps || []).filter(inFlow).length ? s.steps.filter(inFlow) : [s]).forEach((x) => {
+    const ref = x === s ? { stage: s.id, step: null } : { stage: s.id, step: x.id };
+    if (!x.work) missing.work.push(ref); if (!x.wait) missing.wait.push(ref);
+  }));
   return {
     totals: { lead: r1(lead), work: r1(work), wait: r1(wait), flowEfficiency: pct(work, lead), rolledCA: rolled, caMeasuredBoxes: cas.length, note: (data.case || {}).leadNote || null },
     upstream: un ? { boxes: un, work: r1(uw), wait: r1(uq), lead: r1(uw + uq) } : null,
@@ -231,12 +240,12 @@ function summarize(data) {
       loops: loops.length, aiByLevel: ai, markersByKind: markers, parking: (data.parking || []).length,
       hypotheses: (data.hypotheses || []).reduce((m, h) => { m[h.status || 'open'] = (m[h.status || 'open'] || 0) + 1; return m; }, {}),
     },
-    toConfirm,
+    toConfirm, missing,
   };
 }
 
-const DATA_TAG = /<script id="vsm-data" type="application\/json">[\s\S]*?<\/script>/;
-const dataTag = (data) => `<script id="vsm-data" type="application/json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
+const TAG = (id) => new RegExp(`<script id="${id}" type="application/json">[\\s\\S]*?</script>`);
+const jsonTag = (id, v) => `<script id="${id}" type="application/json">${JSON.stringify(v).replace(/</g, '\\u003c')}</script>`;
 
 const [cmd, fileArg] = process.argv.slice(2);
 if (!cmd || !fileArg) {
@@ -350,20 +359,25 @@ if (cmd === 'validate') {
   console.log(`lead ${t.lead} d = work ${t.work} + wait ${t.wait} · flow efficiency ${t.flowEfficiency ?? '—'} % · rolled C&A ${t.rolledCA ?? 'not measured'}${t.rolledCA !== null ? ' %' : ''} (${t.caMeasuredBoxes} boxes)`);
   for (const r of sm.stages) console.log(`${r.n}. ${r.name} [${r.status}] wait ${r.wait} · work ${r.work} · lead ${r.lead} (${r.shareOfLead ?? 0} %) · ↩ ${r.reworkOut} ↻ ${r.iterations} · AI ${r.aiUses} · without work ${r.withoutWork}/${r.boxes}`);
   if (sm.upstream) console.log(`upstream (outside the lead time): ${sm.upstream.boxes} boxes, ${sm.upstream.lead} d`);
-  console.log(`to confirm: ${sm.toConfirm.length}`);
+  console.log(`to confirm: ${sm.toConfirm.length} · without work ${sm.missing.work.length} · without wait ${sm.missing.wait.length}`);
 } else if (cmd === 'embed') {
-  // The page carries the map's data in one fixed tag, so `import` can take it back whatever the page looks like.
+  // The page carries the map (vsm-data) and its figures (vsm-summary) in two fixed tags: the page reads them,
+  // and `import` takes the map back whatever the page looks like. Existing tags are replaced in place; new ones go
+  // before the page's first script, so a script that reads them at load finds them.
   const pg = arg('--page');
   if (!pg || !existsSync(pg)) { console.error('--page <existing page.html> required'); process.exit(2); }
   const { data, errors } = load(file);
   if (errors.length) { console.error(`INVALID ${file}\n- ${errors.join('\n- ')}`); process.exit(1); }
   let html = readFileSync(pg, 'utf8');
-  const tag = dataTag(data);
-  if (DATA_TAG.test(html)) html = html.replace(DATA_TAG, () => tag);
-  else if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, () => `${tag}\n</body>`);
-  else html += `\n${tag}\n`;
+  for (const [id, v] of [['vsm-data', data], ['vsm-summary', summarize(data)]]) {
+    const tag = jsonTag(id, v);
+    if (TAG(id).test(html)) html = html.replace(TAG(id), () => tag);
+    else if (/<script[\s>]/i.test(html)) html = html.replace(/<script[\s>]/i, (m) => `${tag}\n${m}`);
+    else if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, () => `${tag}\n</body>`);
+    else html += `\n${tag}\n`;
+  }
   writeFileSync(pg, html);
-  console.log(`EMBEDDED ${resolve(pg)}`);
+  console.log(`EMBEDDED ${resolve(pg)} (vsm-data, vsm-summary)`);
 } else if (cmd === 'import') {
   // An exported page (or a copy of the published one) carries its map in <script id="vsm-data">: write it back as JSON.
   const out = arg('--output');

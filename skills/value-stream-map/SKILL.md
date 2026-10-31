@@ -17,7 +17,7 @@ node scripts/vsm.mjs outline  <map.json>                      # compact view: id
 node scripts/vsm.mjs patch    <map.json> --ops '<json array>' # apply changes, validate, write only if valid
 node scripts/vsm.mjs detail   <map.json> --stage <id> --steps '<json array>' [--to <sub-step id>]
 node scripts/vsm.mjs summary  <map.json> [--text]             # the figures a page shows (JSON by default)
-node scripts/vsm.mjs embed    <map.json> --page <page.html>   # put the map's data into the page
+node scripts/vsm.mjs embed    <map.json> --page <page.html>   # put the map and its figures into the page
 node scripts/vsm.mjs import   <page.html> --output <map.json> # take the map back out of a page
 ```
 
@@ -88,7 +88,9 @@ A frequency ("one release in five", "every feature") goes in the loop's `count`,
 
 You write the page; there is no template. Use the design system you are told to use (its tokens, type, components), or choose a sober one that suits a working document. To redesign an existing map, write a new page from the same JSON in the new design system. When you update a map that already has a page, start from that page and keep its design unless asked to change it.
 
-What every page must show, from the map and from `summary` (never recompute the figures yourself):
+How the page gets its data: write the page so its script reads two JSON tags, `<script id="vsm-data" type="application/json">` (the map) and `<script id="vsm-summary" type="application/json">` (the figures), then run `embed`: it fills both, places them before the page's first script, and replaces them in place on the next run. Never type the data or the figures into the page by hand.
+
+What every page must show, from `vsm-data` and `vsm-summary` (never recompute a total, a share or an efficiency yourself; looking up which boxes are missing a time or which loops touch a box is fine):
 
 - **Header:** the case title, client, trigger → end, the team.
 - **Totals:** lead time = wait + work, work, wait, flow efficiency (work ÷ lead time), rolled %C&A (or "not measured"), and `totals.note` when present. Times are working days; show under 1 day in hours (1 day = 8 h).
@@ -96,14 +98,15 @@ What every page must show, from the map and from `summary` (never recompute the 
 - **A macro view:** one box per stage with its totals, its rework counts (↩ sent back, ↻ iterations) and its batch; a toggle or a section is enough.
 - **Rework:** every loop with its ends (box → box), label, count, cost and source; an arrow or a clear link from the box that sends work back to the box that redoes it (arrows may appear on demand, e.g. on click).
 - **Per stage:** the `summary.stages` table (wait, work, lead time, share of lead time, efficiency, rework, AI uses, boxes without durations), with the longest stage highlighted.
-- **What is still to complete:** boxes without work or wait times, `toConfirm` items, stages still `assumed`.
+- **What is still to complete:** `missing.work` and `missing.wait` (boxes without a work or wait time), `toConfirm` (items, loops), stages still `assumed`.
 - **Hypotheses** with their status, **parking** ideas, and the latest `log` entries.
+- **Numbers:** days with one decimal (67.7 d); under 1 day in hours (1 day = 8 h); a range as min–max, prefixed "~" when approximate; `max` alone as "≤"; `null` as "?". A stage whose `noDurations` is true shows "?" for its times, never 0.
 - **A legend:** AI levels (assistant, tooled, prepares, chains), marker kinds, the symbols you use.
 - **Language:** the map's language; when the map has `i18n.fr`, offer a FR/EN switch using it.
 
 Rules for the page:
 
 - It is one self-contained HTML page (it may load fonts or a library from a public CDN), readable on a phone, in light and dark.
-- After writing it, run `embed` so the page carries the exact map data in `<script id="vsm-data" type="application/json">`; `import` reads it back. Run it again after every change to the map.
+- Run `embed` after writing the page and again after every change to the map; `import` reads the map back from it.
 - Check the page against `summary` before sharing: same totals, every stage and loop present.
 - Show nothing the map does not hold: no invented figure, no extra comment on people.
