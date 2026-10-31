@@ -113,6 +113,9 @@ Each op writes its own log line; add a `{"log"}` op saying who asked for it. Cha
 
 - Write the real case, not the theoretical process. Mark a stage `confirmed` only when people describe it on the real piece of work.
 - Never invent a duration, a figure, a quote or a marker. Unknown stays `null`; the page counts the boxes still missing durations.
+- Rework is a loop, never a sub-step: "one PR in two goes back for fixes" is a loop from the review to the box that wrote the code, with its count; do not add a "fix" box.
+- A tool named in passing is data: "built it with Copilot" is an AI use on that box (with its level), "in Jira" a tool. A rhythm is a wait and a batch: "a refinement every Tuesday" means the work waits up to a week (`wait` with `text`, `approx`) before a weekly session (`batch`).
+- Before you finish with written input (notes, a pasted answer), read it again sentence by sentence and check that each fact landed on its box: who, work, wait, tools, AI, rework, pain.
 - Separate felt from measured (`felt`, `caApprox`, "felt, not measured" in `source`).
 - A correction that does not name its box: apply it to the most likely one, mark it `confirm: true` or say so in the log, and name the alternative.
 - Keep two possibly duplicate sub-steps rather than merging them silently; mark one `confirm: true`.
