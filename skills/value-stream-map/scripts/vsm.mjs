@@ -274,7 +274,8 @@ function questionsFor(data) {
   stages.forEach((s, si) => {
     const at = { stage: s.id };
     const steps = (s.steps || []).filter((x) => x.phase !== 'upstream');
-    if (!(s.steps || []).length) q(`${s.id}:steps`, 'flow', `What happens in ${s.name}, step by step, and who does each step?`, at);
+    // checked {steps, loops}: set by a live tool once the question was asked for that stage (answered or not).
+    if (!(s.steps || []).length && !(s.checked || {}).steps) q(`${s.id}:steps`, 'flow', `What happens in ${s.name}, step by step, and who does each step?`, at);
     // In a stage, first who does each box and its times, then what it receives (%C&A), its AI uses and tools.
     // A parallel box shares the queue of the one it runs alongside: its wait is not asked.
     const boxes = (steps.length ? steps : [s]).map((x, bi) => ({ x, first: si === 0 && bi === 0,
@@ -291,7 +292,7 @@ function questionsFor(data) {
     }
     if (![s, ...(s.steps || [])].some((x) => (x.markers || []).length)) q(`${s.id}:markers`, 'flow', `In ${s.name}, what slows the work down, hurts, is done twice, or got faster?`, at);
   });
-  if (!loops.length) q('case:loops', 'rework', 'What comes back for rework, from which step to which, how often and at what cost?');
+  if (!loops.length && !stages.some((s) => (s.checked || {}).loops)) q('case:loops', 'rework', 'What comes back for rework, from which step to which, how often and at what cost?');
   loops.forEach((l) => {
     const at = { loop: l.id || null };
     if (empty(l.count)) q(`loop:${l.id}:count`, 'rework', `How often does "${l.label || l.id}" happen?`, at);

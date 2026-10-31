@@ -42,6 +42,16 @@ You can run the session yourself, as the facilitator would: you ask, you record,
 
 Ask one question at a time and record only what was said; never answer for the person. In a group workshop it works the same: the facilitator relays, or you ask the room.
 
+## Live: listening to a call
+
+When the map is filled from a live transcript (a workshop recorded with Wispr Flow or another tool, driven by a live skill), the people talk to each other, not to you: never ask them anything yourself. The same mechanics serve the facilitator instead:
+
+- Each batch of transcript is an input like any other (below): record what was said, on the box it concerns.
+- Then run `questions --near <stage or box being discussed>` and turn the first one or two into **suggestions for the facilitator**, phrased from what was just said, through whatever the live tool shows them (a coach page, a reply line). Never more than three at a time, and none while the group is in the middle of answering.
+- A question counts as answered only when the transcript answers it; add its key to `asked` only when the group says they do not know or that it does not apply.
+- Frame and stages change live the same way (`set` on `case.*`, `stage` ops), when the group says so out loud.
+- Extra fields a live tool keeps in the map (a roster, its own question list, a `now` state, private notes, `stages[].checked`) are kept as they are: `validate`, `patch` and `summary` ignore them, and `questions` treats `checked.steps` / `checked.loops` as already asked. Never show them on the page.
+
 ## Continuing the map
 
 Whether the map is new or existing, inputs are what people say or write: workshop notes, a pasted answer, a person describing their part of the flow, a correction.
