@@ -250,6 +250,8 @@
   .dbtns button { font: 500 12px/1 var(--mono); padding: 7px 11px; border: 1px solid var(--line); background: var(--surface); color: var(--accent); border-radius: 999px; cursor: pointer; }
   .dbtns button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .dmsg { color: var(--muted); font-size: 12px; }
+  .panel.export .steps { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
+  .panel.export a { color: var(--accent); overflow-wrap: anywhere; }
   .dcopy { width: 100%; min-height: 120px; margin-top: 8px; font: 12px/1.4 var(--mono); }
 
   .flash { animation: flash 2.4s ease-out; }
@@ -624,7 +626,10 @@
       // The facilitator's notes: in the export only, never on the map shared live.
       (!window.VSM_LIVE && (data.notes || []).length ? '<div class="panel log"><h3>' + t('Notes du facilitateur', 'Facilitator notes') + '</h3><ul>' + data.notes.map(function (x) { return '<li>' + (x.tag ? '<time>' + esc(x.tag) + '</time>' : '') + esc(T(x.text)) + '</li>'; }).join('') + '</ul></div>' : '') +
       // The map's data, to carry on with an agent (value-stream-map skill): download when the viewer allows it, else copy.
-      (!window.VSM_LIVE ? '<div class="panel export"><h3>' + t('Continuer la carte', 'Continue this map') + '</h3><p class="empty">' + t('Les données de la carte, à reprendre avec un agent (skill value-stream-map).', 'The map data, to carry on with an agent (value-stream-map skill).') + '</p><div class="dbtns">' +
+      (!window.VSM_LIVE ? '<div class="panel export"><h3>' + t('Continuer la carte', 'Continue this map') + '</h3><ol class="steps">' +
+        '<li>' + t('Installer le skill value-stream-map dans Claude Code : ', 'Install the value-stream-map skill in Claude Code: ') + '<a href="https://github.com/manufacture-dev/value-stream-map" target="_blank" rel="noopener">github.com/manufacture-dev/value-stream-map</a>' + t(' (instructions dans le README).', ' (instructions in the README).') + '</li>' +
+        '<li>' + t('Récupérer les données de cette carte ci-dessous et les enregistrer dans un fichier <code>.json</code>.', 'Get this map’s data below and save it as a <code>.json</code> file.') + '</li>' +
+        '<li>' + t('Demander à Claude de la compléter, par exemple : « Continue the value stream map in map.json: QA says… ». Il l’exporte ensuite en page à publier.', 'Ask Claude to complete it, for example: “Continue the value stream map in map.json: QA says…”. It then exports it as a page to publish.') + '</li></ol><div class="dbtns">' +
         (DL ? '<button type="button" data-dl>' + t('Télécharger (JSON)', 'Download (JSON)') + '</button>' : '') +
         '<button type="button" data-copy>' + t('Copier les données', 'Copy the data') + '</button><span class="dmsg" role="status"></span></div><textarea class="dcopy" readonly hidden></textarea></div>' : '') +
       '</div>');
