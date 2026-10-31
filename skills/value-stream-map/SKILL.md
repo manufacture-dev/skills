@@ -90,7 +90,7 @@ Each op writes its own log line; add a `{"log"}` op saying who asked for it. Cha
 
 ## Model
 
-- `case`: `client`, `title`, `trigger` (what starts the work), `end` (when value is delivered), `team`, `stages` (the stage ids, in order).
+- `case`: `client`, `title`, `trigger` (what starts the work), `end` (when value is delivered), `team`, `stages` (the stage ids, in order), `leadNote` (optional: a caveat on the lead time, shown under the totals).
 - `stages[]`: the stages of the delivery cycle as the team names them, in order, changed only with `stage` ops (above), which keep `case.stages` (their ids, in order) in step. Fields: `id`, `name`, `status` (`assumed` until people confirm it on the real case, then `confirmed`), `actors`, `tools`, and, while the stage has no sub-steps, `work`, `wait`, `ai[]`, `markers[]`, `ca`, `batch`.
 - `steps[]` inside a stage: `{id, name, who, tools, work, wait, status, parallel, ai[], markers[], ca, caApprox, caSource, batch}`. `id` is required, lowercase-dashes, unique in the stage and stable (loops point at it).
 - **Attach every item to the most precise box.** Once a stage has sub-steps, nothing stays on the stage: no duration, AI use or marker. To split a stage, use `detail` (or a `detail` op): it moves the stage's items to a sub-step and logs what it moved; then adjust what it guessed.
@@ -113,6 +113,8 @@ Each op writes its own log line; add a `{"log"}` op saying who asked for it. Cha
 
 - Write the real case, not the theoretical process. Mark a stage `confirmed` only when people describe it on the real piece of work.
 - Never invent a duration, a figure, a quote or a marker. Unknown stays `null`; the page counts the boxes still missing durations.
+- A loop whose end is not said (which of two boxes redoes the work): point it at the most likely box with `confirm: true`, name the alternative in the log, and ask; never leave it out and never keep it in a field of your own.
+- Use only the fields of the model; anything else is not shown and not counted.
 - Rework is a loop, never a sub-step: "one PR in two goes back for fixes" is a loop from the review to the box that wrote the code, with its count; do not add a "fix" box.
 - A tool named in passing is data: "built it with Copilot" is an AI use on that box (with its level), "in Jira" a tool. A rhythm is a wait and a batch: "a refinement every Tuesday" means the work waits up to a week (`wait` with `text`, `approx`) before a weekly session (`batch`).
 - Before you finish with written input (notes, a pasted answer), read it again sentence by sentence and check that each fact landed on its box: who, work, wait, tools, AI, rework, pain.
