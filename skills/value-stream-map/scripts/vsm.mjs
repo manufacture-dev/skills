@@ -12,12 +12,13 @@
 //                                                          (what is still to ask, in interview order, or nearest the box just discussed first)
 //   node vsm.mjs embed    <map.json> --page <page.html>    (put the map and its figures into the page, replacing any previous copy)
 //   node vsm.mjs import   <page.html> --output <map.json> [--force]   (take the map back out of a page)
-//   node vsm.mjs page     <map.json> --output <page.html> [--force]   (the default page, with the map in it: a standalone file)
+//   node vsm.mjs page     <map.json> --output <page.html> [--theme <name or folder>] [--force]   (the default page, with the map in it: a standalone file)
 //   node vsm.mjs serve    <map.json> [--page <page.html>] [--port 4173]   (local site that reloads on every change; /designs compares the themes)
 //   node vsm.mjs texts    <map.json> [--lang <code>] [--missing]          (the map's texts to translate, as JSON)
 //   node vsm.mjs labels   [<map.json>] --lang <code> [--missing]          (the default page's labels, in English, to translate into map.ui.<code>)
-//   node vsm.mjs designs  <map.json> --output <dir>                       (one page per built-in theme, and index.html to compare them)
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, statSync, renameSync } from 'node:fs';
+//   node vsm.mjs designs  <map.json> --output <dir> [--themes a,b,c]      (one page per theme, and index.html to compare them)
+//   node vsm.mjs themes                                                   (the built-in themes and what each is)
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, statSync, renameSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
@@ -34,7 +35,10 @@ export const AI_LEVELS = ['assistant', 'tooled', 'prepares', 'chains'];
 export const STAGE_STATUS = ['assumed', 'confirmed'];
 export const HYPOTHESIS_STATUS = ['open', 'confirmed', 'refuted', 'partial'];
 // The stages a new map starts from when none are given; the team changes them as the discussion goes (stage ops).
-export const THEMES = ['neutral', 'blueprint', 'graphite', 'soft', 'contrast'];
+// Themes: "neutral" is the default page as it is; each folder of assets/themes/ is a built-in design system
+// (theme.json, theme.css, fonts/). A map may also name its own theme folder, by a path relative to the map.
+const THEMES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'themes');
+export const THEMES = ['neutral', ...(existsSync(THEMES_DIR) ? readdirSync(THEMES_DIR).filter((d) => existsSync(join(THEMES_DIR, d, 'theme.css'))).sort() : [])];
 const LANG_RE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 export const STARTER_STAGES = ['Request', 'Refinement', 'Build', 'Review', 'QA', 'Release'];
 const slug = (x) => String(x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -141,7 +145,7 @@ export function validate(data) {
   }
   for (const [l, d] of Object.entries(data.i18n || {})) if (!d || typeof d !== 'object' || Array.isArray(d) || Object.values(d).some((v) => typeof v !== 'string')) err(`i18n.${l}`, 'an object: text in the map\'s language → its translation');
   if (data.ui !== undefined && (typeof data.ui !== 'object' || Array.isArray(data.ui))) err('ui', 'an object: language code → page labels (see labels)');
-  if (data.theme !== undefined && !THEMES.includes(data.theme)) err('theme', `one of ${THEMES.join(', ')}`);
+  if (data.theme !== undefined && (typeof data.theme !== 'string' || !data.theme)) err('theme', `a built-in theme (${THEMES.join(', ')}) or the path of a theme folder, relative to the map`);
   if (data.themeTokens !== undefined) {
     const tt = data.themeTokens, ok = (o) => o === undefined || (o && typeof o === 'object' && Object.keys(o).every((k) => /^--[\w-]+$/.test(k)));
     if (!tt || typeof tt !== 'object' || !ok(tt.light) || !ok(tt.dark)) err('themeTokens', '{"light": {"--token": "value"}, "dark": {…}} (CSS custom properties of the page)');
@@ -151,6 +155,39 @@ export function validate(data) {
 
 // Put the map (vsm-data) and its figures (vsm-summary) into a page: existing tags are replaced in place; new ones
 // go before the page's first script, so a script that reads them at load finds them.
+// The theme's CSS for a page: its fonts as data URIs (so the page stays one file, offline, and works where only
+// inline resources load), its theme.css, then the map's themeTokens. `theme` is a built-in name, a folder path
+// (absolute, or relative to `base`), or neutral/empty for none.
+function themeCss(theme, base, tokens) {
+  let css = '';
+  if (theme && theme !== 'neutral') {
+    const dir = THEMES.includes(theme) ? join(THEMES_DIR, theme) : resolve(base || '.', theme);
+    if (!existsSync(join(dir, 'theme.css'))) throw new Error(`theme "${theme}": no theme.css in ${dir} (built-in: ${THEMES.join(', ')})`);
+    const meta = existsSync(join(dir, 'theme.json')) ? JSON.parse(readFileSync(join(dir, 'theme.json'), 'utf8')) : {};
+    for (const f of meta.fonts || []) {
+      const b64 = readFileSync(join(dir, f.file)).toString('base64');
+      css += `@font-face{font-family:"${f.family}";src:url(data:font/woff2;base64,${b64}) format("woff2");font-weight:${f.weight || '400'};font-style:${f.style || 'normal'};font-display:swap${f.unicodeRange ? `;unicode-range:${f.unicodeRange}` : ''}}\n`;
+    }
+    css += readFileSync(join(dir, 'theme.css'), 'utf8');
+  }
+  const decl = (o) => Object.entries(o || {}).filter(([k]) => /^--[\w-]+$/.test(k)).map(([k, v]) => `${k}:${String(v).replace(/[;{}<]/g, '')}`).join(';');
+  if (tokens && (tokens.light || tokens.dark)) css += `\n:root{${decl(tokens.light)}}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){${decl(tokens.dark)}}}:root[data-theme="dark"]{${decl(tokens.dark)}}`;
+  return css;
+}
+// Put the theme in the page: one <style id="vsm-theme"> after the page's own styles (replaced on the next run).
+function withTheme(html, css) {
+  const tag = `<style id="vsm-theme">\n${css.replace(/<\/style/gi, '<\\/style')}\n</style>`;
+  if (/<style id="vsm-theme">[\s\S]*?<\/style>/.test(html)) return html.replace(/<style id="vsm-theme">[\s\S]*?<\/style>/, () => tag);
+  const i = html.indexOf('</style>');
+  return i < 0 ? tag + html : html.slice(0, i + 8) + '\n' + tag + html.slice(i + 8);
+}
+
+function themeInfo(t) {
+  if (!t || t === 'neutral') return 'The default page: sober, system fonts, greys.';
+  const dir = THEMES.includes(t) ? join(THEMES_DIR, t) : resolve(t);
+  try { return JSON.parse(readFileSync(join(dir, 'theme.json'), 'utf8')).description || ''; } catch (e) { return ''; }
+}
+
 // A page that shows each built-in theme in a frame, with its name: to choose a design.
 function designsIndex(items) {
   const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -158,9 +195,9 @@ function designsIndex(items) {
 <style>:root{color-scheme:light dark}body{margin:0;font:14px/1.4 system-ui,sans-serif;background:Canvas;color:CanvasText;padding:16px}
 h1{font-size:18px;margin:0 0 4px}p{margin:0 0 16px;opacity:.75}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:16px}
 figure{margin:0;border:1px solid color-mix(in srgb,CanvasText 20%,transparent);border-radius:8px;overflow:hidden}
-figcaption{padding:8px 12px;font-weight:600;display:flex;justify-content:space-between}.frame{height:620px;overflow:hidden;position:relative}iframe{width:200%;height:1240px;border:0;display:block;transform:scale(.5);transform-origin:0 0}</style></head>
-<body><h1>Map designs</h1><p>The same map in each built-in theme. Say which one to keep; any of them can take your organisation's colours and font.</p><div class="grid">
-${items.map(([n, u]) => `<figure><figcaption>${esc(n)}<a href="${esc(u)}" target="_blank" rel="noopener">open</a></figcaption><div class="frame"><iframe src="${esc(u)}" loading="lazy" title="${esc(n)}"></iframe></div></figure>`).join('\n')}
+figcaption{padding:8px 12px;font-weight:600;display:flex;justify-content:space-between;gap:12px}figcaption small{font-weight:400;opacity:.75}.frame{height:620px;overflow:hidden;position:relative}iframe{width:200%;height:1240px;border:0;display:block;transform:scale(.5);transform-origin:0 0}</style></head>
+<body><h1>Map designs</h1><p>The same map in each design. Say which one to keep.</p><div class="grid">
+${items.map(([n, u, d]) => `<figure><figcaption><span>${esc(n)}${d ? `<small> · ${esc(d)}</small>` : ''}</span><a href="${esc(u)}" target="_blank" rel="noopener">open</a></figcaption><div class="frame"><iframe src="${esc(u)}" loading="lazy" title="${esc(n)}"></iframe></div></figure>`).join('\n')}
 </div></body></html>`;
 }
 
@@ -488,6 +525,10 @@ const TAG = (id) => new RegExp(`<script id="${id}" type="application/json">[\\s\
 const jsonTag = (id, v) => `<script id="${id}" type="application/json">${JSON.stringify(v).replace(/</g, '\\u003c')}</script>`;
 
 const [cmd, fileArg] = process.argv.slice(2);
+if (cmd === 'themes') {
+  for (const t of THEMES) console.log(`${t} · ${themeInfo(t)}`);
+  process.exit(0);
+}
 if (cmd === 'labels') {
   // The default page's labels in English (or the keys still missing for a map's language): translate the values,
   // keep the keys, the {n}/{m}/{b}/{l} placeholders and the one/other forms, then set them in map.ui.<lang>.
@@ -501,7 +542,7 @@ if (cmd === 'labels') {
   process.exit(0);
 }
 if (!cmd || !fileArg) {
-  console.error('usage: vsm.mjs <new|validate|outline|patch|detail|summary|questions|embed|import|page|serve|texts|labels|designs> <file> [--ops <json>] [--stage <id> --steps <json> [--to <id>]] [--page <page.html>] [--output <file>] [--force] [--text]');
+  console.error('usage: vsm.mjs <new|validate|outline|patch|detail|summary|questions|embed|import|page|serve|texts|labels|designs|themes> <file> [--ops <json>] [--stage <id> --steps <json> [--to <id>]] [--page <page.html>] [--output <file>] [--force] [--text]');
   process.exit(2);
 }
 const file = resolve(fileArg);
@@ -667,9 +708,17 @@ if (cmd === 'validate') {
   const { data, errors } = load(file);
   if (errors.length) { console.error(`INVALID ${file}\n- ${errors.join('\n- ')}`); process.exit(1); }
   mkdirSync(out, { recursive: true });
-  for (const t of THEMES) writeFileSync(join(out, `${t}.html`), embedIn(readFileSync(DEFAULT_PAGE, 'utf8'), { ...data, theme: t }));
-  writeFileSync(join(out, 'index.html'), designsIndex(THEMES.map((t) => [t, `${t}.html`])));
-  console.log(`DESIGNS ${resolve(out)} (${THEMES.join(', ')}; open index.html)`);
+  // --themes a,b,c (built-in names or folders, e.g. three new directions) instead of the built-in ones.
+  const list = arg('--themes') ? arg('--themes').split(',').map((x) => x.trim()).filter(Boolean) : THEMES;
+  const items = [];
+  for (const t of list) {
+    const name = t.replace(/\/+$/, '').split('/').pop();
+    let css; try { css = themeCss(t, process.cwd(), data.themeTokens); } catch (e) { console.error(e.message); process.exit(1); }
+    writeFileSync(join(out, `${name}.html`), withTheme(embedIn(readFileSync(DEFAULT_PAGE, 'utf8'), data), css));
+    items.push([name, `${name}.html`, themeInfo(t)]);
+  }
+  writeFileSync(join(out, 'index.html'), designsIndex(items));
+  console.log(`DESIGNS ${resolve(out)} (${items.map((x) => x[0]).join(', ')}; open index.html)`);
 } else if (cmd === 'page') {
   // The skill's default page (neutral design, every layout rule), with the map in it: one file to open or host anywhere.
   const out = arg('--output');
@@ -677,8 +726,9 @@ if (cmd === 'validate') {
   if (existsSync(out) && !process.argv.includes('--force')) { console.error(`exists: ${out} (use --force)`); process.exit(1); }
   const { data, errors } = load(file);
   if (errors.length) { console.error(`INVALID ${file}\n- ${errors.join('\n- ')}`); process.exit(1); }
-  writeFileSync(out, embedIn(readFileSync(DEFAULT_PAGE, 'utf8'), data));
-  console.log(`PAGE ${resolve(out)}`);
+  let css; try { css = themeCss(arg('--theme') || data.theme, dirname(file), data.themeTokens); } catch (e) { console.error(e.message); process.exit(1); }
+  writeFileSync(out, withTheme(embedIn(readFileSync(DEFAULT_PAGE, 'utf8'), data), css));
+  console.log(`PAGE ${resolve(out)}${(arg('--theme') || data.theme) ? ` (theme ${arg('--theme') || data.theme})` : ''}`);
 } else if (cmd === 'serve') {
   // A local site for working sessions: serves the page (yours, or the default one) with the current map and its
   // figures, and reloads open browsers on every change of the map or the page. An invalid map keeps the last valid
@@ -701,12 +751,14 @@ if (cmd === 'validate') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
       res.write('data: hello\n\n'); clients.add(res); req.on('close', () => clients.delete(res)); return;
     }
-    if (req.url === '/designs') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(designsIndex(THEMES.map((t) => [t, `/?theme=${t}`]))); return; }
+    if (req.url === '/designs') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(designsIndex(THEMES.map((t) => [t, `/?theme=${encodeURIComponent(t)}`, themeInfo(t)]))); return; }
     if (req.url === '/map.json') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(valid)); return; }
     if (req.url === '/' || req.url.startsWith('/?')) {
       // ?theme=<name> previews a built-in theme (the page reads it); the map is unchanged.
       if (!valid) { res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(`INVALID ${file}\n- ${current.errors.join('\n- ')}`); return; }
+      let theme = valid.theme; try { const q = new URL(req.url, 'http://x').searchParams.get('theme'); if (q) theme = q; } catch (e) {}
       let html = embedIn(readFileSync(pg, 'utf8'), valid);
+      if (pg === DEFAULT_PAGE) { try { html = withTheme(html, themeCss(theme, dirname(file), valid.themeTokens)); } catch (e) { console.error(e.message); } }
       html = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, () => `${RELOAD}\n</body>`) : html + RELOAD;
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(html); return;
     }

@@ -8,6 +8,8 @@
      To restyle it in an organisation's look, change the tokens in the first :root blocks (colours, font, radius);
      for a full design system, write a new page from the same data (see SKILL.md). -->
 <style>
+/* The page's own styles, in a layer: a theme (unlayered, injected after) wins over them without heavier selectors. */
+@layer page {
 :root{
   --bg:#f6f6f4; --surface:#ffffff; --surface-2:#f0f1f3; --ink:#1c1f24; --muted:#5b616b; --line:#d8dbe0; --line-strong:#9aa1ab;
   --wait:#d97a1f; --wait-soft:#fbe7d2; --work:#2c68b0; --work-soft:#d9e6f6;
@@ -36,19 +38,6 @@
   --shadow:none;
 }
 
-/* Built-in themes (data-vsm-theme on the root, from the map's "theme"): tokens only, light and dark. "neutral" is the default above. */
-:root[data-vsm-theme="blueprint"]{--bg:#e3ecf7; --surface:#fbfdff; --surface-2:#dbe7f5; --ink:#0b2545; --muted:#3f5a7a; --line:#b4c9e3; --line-strong:#5f86b5; --wait:#d0661c; --wait-soft:#f9e1cd; --work:#0b5cad; --work-soft:#cfe0f5; --radius:3px; --shadow:none; --font-head:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --font-num:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
-@media (prefers-color-scheme: dark){:root[data-vsm-theme="blueprint"]:not([data-theme="light"]){--bg:#081626; --surface:#0e2238; --surface-2:#13304f; --ink:#e3eefa; --muted:#9db6d2; --line:#21405f; --line-strong:#4d77a6; --wait:#f2a463; --wait-soft:#4a2f1d; --work:#6cb0f5; --work-soft:#123a62; --shadow:none; color-scheme:dark}}
-:root[data-theme="dark"][data-vsm-theme="blueprint"]{--bg:#081626; --surface:#0e2238; --surface-2:#13304f; --ink:#e3eefa; --muted:#9db6d2; --line:#21405f; --line-strong:#4d77a6; --wait:#f2a463; --wait-soft:#4a2f1d; --work:#6cb0f5; --work-soft:#123a62; --shadow:none; color-scheme:dark}
-:root[data-vsm-theme="graphite"]{--bg:#e6e6e6; --surface:#ffffff; --surface-2:#efefef; --ink:#000000; --muted:#4a4a4a; --line:#c8c8c8; --line-strong:#000000; --wait:#d35400; --wait-soft:#f6dcc8; --work:#000000; --work-soft:#d9d9d9; --ai:#5a3fb0; --radius:0; --shadow:none; --font-head:"Helvetica Neue",Helvetica,Arial,sans-serif;}
-@media (prefers-color-scheme: dark){:root[data-vsm-theme="graphite"]:not([data-theme="light"]){--bg:#0a0a0a; --surface:#151515; --surface-2:#1f1f1f; --ink:#ffffff; --muted:#a8a8a8; --line:#2e2e2e; --line-strong:#ffffff; --wait:#ff8a3d; --wait-soft:#40230f; --work:#ffffff; --work-soft:#383838; --ai:#b9a4f2; --shadow:none; color-scheme:dark}}
-:root[data-theme="dark"][data-vsm-theme="graphite"]{--bg:#0a0a0a; --surface:#151515; --surface-2:#1f1f1f; --ink:#ffffff; --muted:#a8a8a8; --line:#2e2e2e; --line-strong:#ffffff; --wait:#ff8a3d; --wait-soft:#40230f; --work:#ffffff; --work-soft:#383838; --ai:#b9a4f2; --shadow:none; color-scheme:dark}
-:root[data-vsm-theme="soft"]{--bg:#f1ecfa; --surface:#ffffff; --surface-2:#f4effc; --ink:#2a2342; --muted:#6d6690; --line:#e6def4; --line-strong:#b9aed6; --wait:#e8735a; --wait-soft:#fde3dc; --work:#4a7fe0; --work-soft:#e0eafc; --ai:#8a5cd6; --radius:18px; --shadow:0 4px 18px rgba(70,40,140,.10); --font:ui-rounded,"SF Pro Rounded","Nunito",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
-@media (prefers-color-scheme: dark){:root[data-vsm-theme="soft"]:not([data-theme="light"]){--bg:#16121f; --surface:#211c2e; --surface-2:#2a2439; --ink:#efeaf9; --muted:#aea5c8; --line:#372f4b; --line-strong:#6f658f; --wait:#f29a83; --wait-soft:#47281f; --work:#86b2f3; --work-soft:#1f3354; --ai:#bf9cf3; --shadow:none; color-scheme:dark}}
-:root[data-theme="dark"][data-vsm-theme="soft"]{--bg:#16121f; --surface:#211c2e; --surface-2:#2a2439; --ink:#efeaf9; --muted:#aea5c8; --line:#372f4b; --line-strong:#6f658f; --wait:#f29a83; --wait-soft:#47281f; --work:#86b2f3; --work-soft:#1f3354; --ai:#bf9cf3; --shadow:none; color-scheme:dark}
-:root[data-vsm-theme="contrast"]{--bg:#ffffff; --surface:#ffffff; --surface-2:#f0f0f0; --ink:#000000; --muted:#333333; --line:#000000; --line-strong:#000000; --wait:#a34400; --wait-soft:#ffe0c2; --work:#0033a0; --work-soft:#d6e2ff; --rework:#9a0059; --ai:#4b0fa0; --red:#b00000; --amber:#7a4a00; --green:#006b2e; --sel:#ffdd00; --radius:0; --shadow:none;}
-@media (prefers-color-scheme: dark){:root[data-vsm-theme="contrast"]:not([data-theme="light"]){--bg:#000000; --surface:#000000; --surface-2:#1a1a1a; --ink:#ffffff; --muted:#e0e0e0; --line:#ffffff; --line-strong:#ffffff; --wait:#ffad5c; --wait-soft:#4d2600; --work:#7fb2ff; --work-soft:#00264d; --rework:#ff7ac3; --ai:#c9a8ff; --red:#ff6b6b; --amber:#ffcc4d; --green:#5ee08f; --sel:#ffdd00; --shadow:none; color-scheme:dark}}
-:root[data-theme="dark"][data-vsm-theme="contrast"]{--bg:#000000; --surface:#000000; --surface-2:#1a1a1a; --ink:#ffffff; --muted:#e0e0e0; --line:#ffffff; --line-strong:#ffffff; --wait:#ffad5c; --wait-soft:#4d2600; --work:#7fb2ff; --work-soft:#00264d; --rework:#ff7ac3; --ai:#c9a8ff; --red:#ff6b6b; --amber:#ffcc4d; --green:#5ee08f; --sel:#ffdd00; --shadow:none; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--font);overflow-x:hidden}
@@ -73,6 +62,13 @@ a{color:var(--work)}
 .flowline{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:6px 0}
 .flowline b{font-weight:600}
 .team{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.lbl-team{margin-right:4px}
+.tag.longest-tag{border-color:var(--wait);color:var(--wait)}
+.miss-block{margin-bottom:10px}
+.hyp-list{list-style:none;padding:0}
+.hyp{margin:6px 0}
+.legend h3{margin:12px 0 0}
+.detail-head{display:flex;justify-content:space-between;gap:8px}
 .chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:12px;background:var(--surface-2)}
 /* totals */
 .totals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
@@ -190,6 +186,7 @@ ol.steps{margin:4px 0 12px;padding-left:20px} ol.steps li{margin:3px 0}
 #copyArea{width:100%;min-height:140px;margin-top:10px;font:12px ui-monospace,Menlo,monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px}
 .log li{margin:2px 0}
 .log .at{font-variant-numeric:tabular-nums;color:var(--muted);margin-right:8px}
+}
 </style>
 </head>
 <body>
@@ -646,9 +643,9 @@ ol.steps{margin:4px 0 12px;padding-left:20px} ol.steps li{margin:3px 0}
  }
 }</script>
 <main>
-  <header class="section-head" id="hdr"></header>
-  <section aria-labelledby="h-tot"><h2 id="h-tot" data-t="totalsTitle"></h2><div class="totals" id="totals"></div><div class="note" id="totNote"></div></section>
-  <section aria-labelledby="h-map">
+  <header class="section-head" id="hdr" data-part="header"></header>
+  <section aria-labelledby="h-tot" data-part="totals"><h2 id="h-tot" data-t="totalsTitle"></h2><div class="totals" id="totals"></div><div class="note" id="totNote"></div></section>
+  <section aria-labelledby="h-map" data-part="map">
     <div class="maphead">
       <h2 id="h-map" style="margin:0" data-t="mapTitle"></h2>
       <div class="seg" role="group" id="viewSwitch">
@@ -660,16 +657,16 @@ ol.steps{margin:4px 0 12px;padding-left:20px} ol.steps li{margin:3px 0}
     <div class="flow-scroll" id="flowScroll"><div class="canvas" id="canvas"></div></div>
     <div class="detail" id="detail" hidden></div>
   </section>
-  <section aria-labelledby="h-rw"><h2 id="h-rw" data-t="reworkTitle"></h2><div class="tw" id="rework"></div></section>
-  <section aria-labelledby="h-st"><h2 id="h-st" data-t="stagesTitle"></h2><div class="tw" id="stageTable"></div><div class="note" data-t="tableNote"></div></section>
-  <section aria-labelledby="h-miss"><h2 id="h-miss" data-t="missingTitle"></h2><div id="missing"></div></section>
-  <section class="grid2">
+  <section aria-labelledby="h-rw" data-part="rework"><h2 id="h-rw" data-t="reworkTitle"></h2><div class="tw" id="rework"></div></section>
+  <section aria-labelledby="h-st" data-part="stages"><h2 id="h-st" data-t="stagesTitle"></h2><div class="tw" id="stageTable"></div><div class="note" data-t="tableNote"></div></section>
+  <section aria-labelledby="h-miss" data-part="missing"><h2 id="h-miss" data-t="missingTitle"></h2><div id="missing"></div></section>
+  <section class="grid2" data-part="ideas">
     <div><h2 data-t="hypTitle"></h2><div id="hyp"></div></div>
     <div><h2 data-t="parkTitle"></h2><div id="park"></div></div>
   </section>
-  <section><details class="legend" id="legendBox"><summary data-t="legendTitle"></summary><div id="legend"></div></details></section>
-  <section aria-labelledby="h-log"><h2 id="h-log" data-t="logTitle"></h2><ul class="plain log" id="log"></ul></section>
-  <section aria-labelledby="h-cont" id="continue">
+  <section data-part="legend"><details class="legend" id="legendBox"><summary data-t="legendTitle"></summary><div id="legend"></div></details></section>
+  <section aria-labelledby="h-log" data-part="log"><h2 id="h-log" data-t="logTitle"></h2><ul class="plain log" id="log"></ul></section>
+  <section aria-labelledby="h-cont" id="continue" data-part="continue">
     <h2 id="h-cont" data-t="contTitle"></h2>
     <ol class="steps" id="contSteps"></ol>
     <div class="actions">
@@ -687,19 +684,6 @@ const $ = (s, r = document) => r.querySelector(s);
 const D = JSON.parse($('#vsm-data').textContent || '{}');
 const S = JSON.parse($('#vsm-summary').textContent || '{}');
 if (D.case && D.case.title) document.title = D.case.title;
-// Theme: ?theme=<name> (previews), else the map's "theme", else neutral. "themeTokens" {light, dark} overrides any
-// token (an organisation's colours, font, radius) on top of the theme.
-const THEMES = ['neutral', 'blueprint', 'graphite', 'soft', 'contrast'];
-{
-  let th = D.theme; try { const q = new URLSearchParams(location.search).get('theme'); if (q) th = q; } catch (e) {}
-  if (THEMES.includes(th) && th !== 'neutral') document.documentElement.dataset.vsmTheme = th;
-  const tt = D.themeTokens || {}, decl = (o) => Object.entries(o || {}).filter(([k]) => /^--[\w-]+$/.test(k)).map(([k, v]) => `${k}:${String(v).replace(/[;{}<]/g, '')}`).join(';');
-  if (tt.light || tt.dark) {
-    const st = document.createElement('style');
-    st.textContent = `:root:root:root{${decl(tt.light)}}@media (prefers-color-scheme: dark){:root:root:root:not([data-theme="light"]){${decl(tt.dark)}}}:root:root:root[data-theme="dark"]{${decl(tt.dark)}}`;
-    document.head.appendChild(st);
-  }
-}
 const PX = 22; // pixels per working day, shared by the timeline and the per-stage table
 const LEVELS = ['assistant', 'tooled', 'prepares', 'chains'];
 const KINDS = ['accelerates', 'slows', 'bottleneck', 'new-bottleneck', 'pain', 'new-pain', 'duplicate', 'not-done'];
@@ -768,15 +752,15 @@ function renderHeader() {
   const c = D.case || {};
   $('#hdr').innerHTML = `
     <div class="topbar">
-      <div style="min-width:0">
+      <div class="title-block" style="min-width:0">
         <div class="client">${esc(c.client)}</div>
         <h1>${E(c.title)}</h1>
       </div>
       ${LANGS.length === 2 ? `<div class="seg" role="group" aria-label="${T().langLabel}">${LANGS.map((l) => `<button type="button" data-lang="${esc(l)}" aria-pressed="${lang === l}" title="${esc(langName(l))}">${esc(l.toUpperCase())}</button>`).join('')}</div>`
         : LANGS.length > 2 ? `<label class="langpick"><span class="muted small">${T().langLabel}</span> <select id="langSel">${LANGS.map((l) => `<option value="${esc(l)}"${lang === l ? ' selected' : ''}>${esc(langName(l))}</option>`).join('')}</select></label>` : ''}
     </div>
-    <div class="flowline"><span class="muted">${T().trigger}</span> <b>${E(c.trigger)}</b> <span aria-hidden="true">→</span> <span class="muted">${T().end}</span> <b>${E(c.end)}</b></div>
-    <div class="team"><span class="muted small" style="margin-right:4px">${T().team}</span>${(c.team || []).map((m) => `<span class="chip">${E(m)}</span>`).join('')}</div>`;
+    <div class="flowline"><span class="muted lbl lbl-trigger">${T().trigger}</span> <b class="trigger">${E(c.trigger)}</b> <span class="arr" aria-hidden="true">→</span> <span class="muted lbl lbl-end">${T().end}</span> <b class="end-text">${E(c.end)}</b></div>
+    <div class="team"><span class="muted small lbl lbl-team">${T().team}</span>${(c.team || []).map((m) => `<span class="chip">${E(m)}</span>`).join('')}</div>`;
   const setLang = (l) => { lang = l; try { localStorage.setItem('vsm-lang', lang); } catch (e) {} renderAll(); };
   document.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
   const ls = $('#langSel'); if (ls) ls.addEventListener('change', () => setLang(ls.value));
@@ -788,11 +772,11 @@ function renderTotals() {
   const days = (v) => (none ? '?' : fmtDays(v));
   const sub = t.incompleteStages > 0 ? `<div class="sub">${esc(u.incomplete(t.incompleteStages, t.stagesWithoutDurations || 0))}</div>` : '';
   $('#totals').innerHTML = `
-    <div class="tot"><div class="v">${days(t.lead)}</div><div class="l">${u.lead} · ${u.leadSub}</div>${sub}</div>
+    <div class="tot lead"><div class="v">${days(t.lead)}</div><div class="l">${u.lead} · ${u.leadSub}</div>${sub}</div>
     <div class="tot work"><div class="v">${days(t.work)}</div><div class="l">${u.work}</div></div>
     <div class="tot wait"><div class="v">${days(t.wait)}</div><div class="l">${u.wait}</div></div>
-    <div class="tot"><div class="v">${pct(t.flowEfficiency)}</div><div class="l">${u.fe} · ${u.feSub}</div></div>
-    <div class="tot"><div class="v">${t.rolledCA == null ? esc(u.notMeasured) : pct(t.rolledCA)}</div><div class="l">${u.rca}${t.rolledCA == null ? '' : ' · ' + esc(u.caOver(t.caMeasuredBoxes))}</div></div>`;
+    <div class="tot fe"><div class="v">${pct(t.flowEfficiency)}</div><div class="l">${u.fe} · ${u.feSub}</div></div>
+    <div class="tot rca"><div class="v">${t.rolledCA == null ? esc(u.notMeasured) : pct(t.rolledCA)}</div><div class="l">${u.rca}${t.rolledCA == null ? '' : ' · ' + esc(u.caOver(t.caMeasuredBoxes))}</div></div>`;
   const notes = [];
   if (t.note) notes.push(E(t.note));
   if (S.upstream && S.upstream.boxes) notes.push(esc(u.upstreamNote(S.upstream.boxes, fmtDays(S.upstream.lead))));
@@ -1027,7 +1011,7 @@ function renderDetail() {
     rows.push([u.loopsHere, ls.length ? `<ul class="plain">${ls.map(lp).join('')}</ul>` : u.noLoops]);
   }
   el.hidden = false;
-  el.innerHTML = `<div style="display:flex;justify-content:space-between;gap:8px"><b>${title}</b><button type="button" class="btn small" id="closeSel">${u.close}</button></div><dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
+  el.innerHTML = `<div class="detail-head"><b class="detail-title">${title}</b><button type="button" class="btn small" id="closeSel">${u.close}</button></div><dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
   $('#closeSel').addEventListener('click', () => { sel = null; update(); });
 }
 
@@ -1062,7 +1046,7 @@ function renderTable() {
   }
   (S.stages || []).forEach((sm) => {
     const nd = sm.noDurations, lg = sm.id === S.longestStage;
-    rows += `<tr class="${lg ? 'longest' : ''}"><td class="num">${sm.n}</td><td>${E(sm.name)}${sm.status !== 'confirmed' ? ` <span class="tag tc">${u.toConfirm}</span>` : ''}${!sm.detailed ? ` <span class="tag">${u.notDetailed}</span>` : ''}${lg ? ` <span class="tag" style="border-color:var(--wait);color:var(--wait)">${u.longest}</span>` : ''}</td>
+    rows += `<tr class="${lg ? 'longest' : ''}"><td class="num">${sm.n}</td><td>${E(sm.name)}${sm.status !== 'confirmed' ? ` <span class="tag tc">${u.toConfirm}</span>` : ''}${!sm.detailed ? ` <span class="tag">${u.notDetailed}</span>` : ''}${lg ? ` <span class="tag longest-tag">${u.longest}</span>` : ''}</td>
       <td class="num">${q(sm.wait, nd)}</td><td class="num">${q(sm.work, nd)}</td><td class="num">${q(sm.lead, nd)}</td>
       <td class="num">${nd ? '?' : pct(sm.shareOfLead)}</td><td class="num">${nd ? '?' : pct(sm.efficiency)}</td>
       <td class="num">↩ ${sm.reworkOut} / ↻ ${sm.iterations}</td><td class="num">${sm.aiUses}</td>
@@ -1070,7 +1054,7 @@ function renderTable() {
       <td>${nd ? '?' : barCell(sm.wait, sm.work)}</td></tr>`;
   });
   const ai = Object.entries(c.aiByLevel || {}).map(([k, n]) => `${esc(u.lv[k] || k)} ${n}`).join(', ');
-  rows += `<tr class="total"><td></td><td>${u.wholeStream}</td><td class="num">${fmtDays(t.wait)}</td><td class="num">${fmtDays(t.work)}</td><td class="num">${fmtDays(t.lead)}</td><td class="num">100 %</td><td class="num">${pct(t.flowEfficiency)}</td><td class="num">${esc(u.loopsN(c.loops || 0))}</td><td class="small">${ai || '0'}</td><td class="num">${c.boxesWithoutWork}/${c.boxes}</td><td class="num">${c.boxesWithoutWait}/${c.boxes}</td><td></td></tr>`;
+  rows += `<tr class="total"><td></td><td>${u.wholeStream}</td><td class="num">${fmtDays(t.wait)}</td><td class="num">${fmtDays(t.work)}</td><td class="num">${fmtDays(t.lead)}</td><td class="num">100 %</td><td class="num">${pct(t.flowEfficiency)}</td><td class="num">${esc(u.loopsN(c.loops || 0))}</td><td class="small ai-total">${ai || '0'}</td><td class="num">${c.boxesWithoutWork}/${c.boxes}</td><td class="num">${c.boxesWithoutWait}/${c.boxes}</td><td></td></tr>`;
   $('#stageTable').innerHTML = `<table><thead><tr><th class="num">#</th><th>${u.thStage}</th><th class="num">${u.thWait}</th><th class="num">${u.thWork}</th><th class="num">${u.thLead}</th><th class="num">${u.thShare}</th><th class="num">${u.thEff}</th><th class="num">${u.thRework}</th><th class="num">${u.thAI}</th><th class="num">${u.thNoWork}</th><th class="num">${u.thNoWait}</th><th>${u.thBar}</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function renderMissing() {
@@ -1083,13 +1067,13 @@ function renderMissing() {
   });
   const as = (S.stages || []).filter((s) => s.status !== 'confirmed').map((s) => `<li>${E(s.name)}</li>`);
   const asSteps = (D.stages || []).flatMap((s) => (s.steps || []).filter((x) => x.status === 'assumed').map((x) => `<li>${boxName(s.id, x.id)}</li>`));
-  const blk = (h, inner) => `<div style="margin-bottom:10px"><b>${h}</b>${inner}</div>`;
+  const blk = (h, inner) => `<div class="miss-block"><b class="miss-head">${h}</b>${inner}</div>`;
   const ul = (a) => (a.length ? `<ul class="plain">${a.join('')}</ul>` : `<p class="muted">${u.nothing}</p>`);
   $('#missing').innerHTML = `<div class="grid2"><div>${blk(`${u.missWork} (${m.work.length})`, list(m.work))}${blk(`${u.missConfirm} (${tc.length})`, ul(tc))}${blk(`${u.missAssumed} (${as.length})`, ul(as))}${blk(`${u.missAssumedSteps} (${asSteps.length})`, ul(asSteps))}</div><div>${blk(`${u.missWait} (${m.wait.length})`, list(m.wait))}</div></div>`;
 }
 function renderHypPark() {
   const u = T();
-  $('#hyp').innerHTML = (D.hypotheses || []).length ? `<ul class="plain" style="list-style:none;padding:0">${D.hypotheses.map((h) => `<li style="margin:6px 0"><span class="st st-${esc(h.status)}">${esc(u.hs[h.status] || h.status)}</span><b>${esc(h.id)}</b> ${E(h.text)}</li>`).join('')}</ul>` : `<p class="muted">${u.nothing}</p>`;
+  $('#hyp').innerHTML = (D.hypotheses || []).length ? `<ul class="plain hyp-list">${D.hypotheses.map((h) => `<li class="hyp"><span class="st st-${esc(h.status)}">${esc(u.hs[h.status] || h.status)}</span><b class="hyp-id">${esc(h.id)}</b> ${E(h.text)}</li>`).join('')}</ul>` : `<p class="muted">${u.nothing}</p>`;
   $('#park').innerHTML = (D.parking || []).length ? `<ul class="plain">${D.parking.map((p) => `<li>${E(p.text)}${p.who ? ` <span class="muted">(${E(p.who)})</span>` : ''}</li>`).join('')}</ul>` : `<p class="muted">${u.nothing}</p>`;
 }
 function renderLegend() {
@@ -1097,9 +1081,9 @@ function renderLegend() {
   const lv = LEVELS.map((l) => `<div><span class="notch">${notch(l)}</span><b>${esc(u.lv[l])}</b>: ${esc(u.lvd[l])}</div>`).join('');
   const mk = KINDS.map((k) => `<div class="mk mk-${k}"><b>${esc(u.mk[k])}</b>: ${esc(u.mkd[k])}</div>`).join('');
   const sy = u.lg.map(([s, d]) => `<div><span class="sym">${esc(s)}</span> ${esc(d)}</div>`).join('');
-  $('#legend').innerHTML = `<h3 class="small muted" style="margin:12px 0 0">${u.ai}</h3><div class="legend-grid">${lv}</div>
-    <h3 class="small muted" style="margin:12px 0 0">${u.markers}</h3><div class="legend-grid">${mk}</div>
-    <h3 class="small muted" style="margin:12px 0 0">▽ · ↩ · ↻ · ~ · ?</h3><div class="legend-grid">${sy}
+  $('#legend').innerHTML = `<h3 class="small muted">${u.ai}</h3><div class="legend-grid">${lv}</div>
+    <h3 class="small muted">${u.markers}</h3><div class="legend-grid">${mk}</div>
+    <h3 class="small muted">▽ · ↩ · ↻ · ~ · ?</h3><div class="legend-grid">${sy}
     <div><span class="sym"><span class="bar" style="display:inline-flex;width:40px;vertical-align:middle"><span class="bw" style="width:20px"></span><span class="bk" style="width:20px"></span></span></span> ${u.wait} / ${u.work}</div></div>`;
 }
 function renderLog() {
