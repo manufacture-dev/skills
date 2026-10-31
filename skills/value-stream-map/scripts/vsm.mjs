@@ -203,6 +203,8 @@ function summarize(data) {
       iterations: loops.filter((l) => l.from === s.id && l.to === s.id && (l.toStep || '') === (l.fromStep || '')).length,
       aiUses: (s.ai || []).length + st.reduce((m, x) => m + (x.ai || []).length, 0),
       noDurations: boxes.every((x) => !x.work && !x.wait),
+      rolledCA: (() => { const v = boxes.filter((x) => typeof x.ca === 'number').map((x) => x.ca); return v.length ? Math.round(v.reduce((m, c) => (m * c) / 100, 1) * 100) : null; })(),
+      markers: boxes.reduce((m, x) => m + (x.markers || []).length, 0) + (st.length ? (s.markers || []).length : 0),
       batches: boxes.filter((x) => x.batch).map((x) => x.batch),
     };
   });
