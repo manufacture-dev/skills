@@ -23,7 +23,7 @@ Requires Node 18 or later; no other dependency.
 2. Ask Claude, for example: *"Let's map how our last feature went to production, in map.json"*, or *"Continue the value stream map in map.json: QA says one story in two comes back because the acceptance criteria are not testable."*
 3. Ask for the page, for example: *"Make the page for map.json"* or *"Redo the map's page in our design system"*. The page carries the map's data, so it can be picked up again later.
 
-To try it without your own data, start from the fictional example [`examples/lumen-report-export.json`](examples/lumen-report-export.json) (Lumen Insights, a made-up company: eight stages, 26 boxes, parallel work, six rework loops, AI uses at every level): *"Make the page for examples/lumen-report-export.json"*.
+To try it without your own data, start from the fictional example [`examples/lumen-report-export.json`](examples/lumen-report-export.json) (Lumen Insights, a made-up company: eight stages, 23 boxes, parallel work, six rework loops, AI uses at every level): *"Make the page for examples/lumen-report-export.json"*.
 
 What the agent follows (model, rules, commands) is in [`skills/value-stream-map/SKILL.md`](skills/value-stream-map/SKILL.md).
 
