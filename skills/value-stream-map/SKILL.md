@@ -94,7 +94,7 @@ How the page gets its data: write the page so its script reads two JSON tags, `<
 
 The design system decides colours, type, spacing and components. It never changes the layout below: a value stream map is read left to right, and people compare pages of different maps.
 
-1. **Order of the page:** header (case, trigger → end, team) · totals strip · the map with its view switch · rework list · per-stage table · what is still to complete · hypotheses and parking · legend (collapsible) · latest changes.
+1. **Order of the page:** header (case, trigger → end, team) · totals strip · the map with its view switch · rework list · per-stage table · what is still to complete · hypotheses and parking · legend (collapsible) · latest changes · **Continue this map**.
 2. **Two views of the same map, switched by a control above it:** **Detailed** (default) and **Macro**. Both keep the same horizontal flow and the same stage order; switching changes only the level of detail.
 3. **Horizontal, left to right, on one line.** Stages follow each other from left to right as frames; in Detailed, each stage holds its sub-steps as boxes, also left to right. The flow never wraps onto a second line and never stacks vertically, on any screen: when it is wider than the screen, the flow scrolls sideways inside its own container (the page itself never scrolls sideways).
 4. **Between two boxes:** a queue showing the wait of the box that follows (a ▽-like symbol with the duration, "?" when unknown), or a plain arrow when there is no wait to show. The wait sits *between* the boxes, before the box that waits, never inside a box.
@@ -104,6 +104,10 @@ The design system decides colours, type, spacing and components. It never change
 8. **A timeline under the flow**, aligned with the stages: for each stage, its wait then its work, proportional to the lead time (wait and work in two distinct colours used everywhere on the page: wait warm, work cool).
 9. **Rework arrows** run under the boxes, from the box that sends work back to the box that redoes it, with the loop's count as a short caption; they appear when a box or a line of the rework list is selected (all at once is unreadable), in both views (in Macro, between stage boxes).
 10. **Totals strip:** lead time, work, wait, flow efficiency, rolled %C&A, each as a large figure with its label, and `totals.note` under it.
+11. **Continue this map** (always, last section): how to carry on with this map. Three short steps: install the value-stream-map skill (link: https://github.com/manufacture-dev/value-stream-map), get this map's data, ask Claude to continue it. Then two buttons on the exact `vsm-data` content:
+    - **Copy the data**: `navigator.clipboard.writeText(json)` inside the click; if it fails, show the JSON in a read-only, selected text area so it can be copied by hand.
+    - **Download (JSON)**: shown only when the page runs as a Claude artifact that allows downloads: `const dl = window.claude && await window.claude.use('downloads')`; when `dl` is not null, `dl.save({filename: '<case>.json', data: json})`. When publishing the page as an artifact, declare the `downloads` capability. Without it, show only Copy.
+    A short status line says "Copied." or "Saved." after the action.
 
 What every page must show, from `vsm-data` and `vsm-summary` (never recompute a total, a share or an efficiency yourself; looking up which boxes are missing a time or which loops touch a box is fine):
 
