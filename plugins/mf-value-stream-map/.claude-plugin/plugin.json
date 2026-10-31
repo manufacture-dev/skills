@@ -8,7 +8,7 @@
   "homepage": "https://github.com/manufacture-dev/skills/tree/main/plugins/mf-value-stream-map",
   "repository": "https://github.com/manufacture-dev/skills",
   "license": "MIT",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "keywords": [
     "value stream mapping",
     "vsm",
