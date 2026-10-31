@@ -1,0 +1,76 @@
+{
+ "name": "plan",
+ "description": "An engineering drawing: title block, grid paper, outlined components and dimension lines; a blueprint in dark mode.",
+ "fonts": [
+  {
+   "family": "IBM Plex Mono",
+   "file": "fonts/ibm-plex-mono-latin-400-normal.woff2",
+   "weight": "400",
+   "style": "normal",
+   "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+   "license": "OFL-1.1",
+   "author": "Mike Abbink, Bold Monday (IBM Corp.)",
+   "source": "https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5.3.0/files/ibm-plex-mono-latin-400-normal.woff2"
+  },
+  {
+   "family": "IBM Plex Mono",
+   "file": "fonts/ibm-plex-mono-latin-ext-400-normal.woff2",
+   "weight": "400",
+   "style": "normal",
+   "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
+   "license": "OFL-1.1",
+   "author": "Mike Abbink, Bold Monday (IBM Corp.)",
+   "source": "https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5.3.0/files/ibm-plex-mono-latin-ext-400-normal.woff2"
+  },
+  {
+   "family": "IBM Plex Mono",
+   "file": "fonts/ibm-plex-mono-latin-500-normal.woff2",
+   "weight": "500",
+   "style": "normal",
+   "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+   "license": "OFL-1.1",
+   "author": "Mike Abbink, Bold Monday (IBM Corp.)",
+   "source": "https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5.3.0/files/ibm-plex-mono-latin-500-normal.woff2"
+  },
+  {
+   "family": "IBM Plex Sans Condensed",
+   "file": "fonts/ibm-plex-sans-condensed-latin-400-normal.woff2",
+   "weight": "400",
+   "style": "normal",
+   "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+   "license": "OFL-1.1",
+   "author": "Mike Abbink, Bold Monday (IBM Corp.)",
+   "source": "https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-sans-condensed@5.3.0/files/ibm-plex-sans-condensed-latin-400-normal.woff2"
+  },
+  {
+   "family": "IBM Plex Sans Condensed",
+   "file": "fonts/ibm-plex-sans-condensed-latin-ext-400-normal.woff2",
+   "weight": "400",
+   "style": "normal",
+   "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
+   "license": "OFL-1.1",
+   "author": "Mike Abbink, Bold Monday (IBM Corp.)",
+   "source": "https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-sans-condensed@5.3.0/files/ibm-plex-sans-condensed-latin-ext-400-normal.woff2"
+  },
+  {
+   "family": "IBM Plex Sans Condensed",
+   "file": "fonts/ibm-plex-sans-condensed-latin-600-normal.woff2",
+   "weight": "600",
+   "style": "normal",
+   "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+   "license": "OFL-1.1",
+   "author": "Mike Abbink, Bold Monday (IBM Corp.)",
+   "source": "https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-sans-condensed@5.3.0/files/ibm-plex-sans-condensed-latin-600-normal.woff2"
+  },
+  {
+   "family": "IBM Plex Sans Condensed",
+   "file": "fonts/ibm-plex-sans-condensed-latin-ext-600-normal.woff2",
+   "weight": "600",
+   "style": "normal",
+   "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
+   "license": "OFL-1.1",
+   "author": "Mike Abbink, Bold Monday (IBM Corp.)",
+   "source": "https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-sans-condensed@5.3.0/files/ibm-plex-sans-condensed-latin-ext-600-normal.woff2"
+  }
+ ]
+}

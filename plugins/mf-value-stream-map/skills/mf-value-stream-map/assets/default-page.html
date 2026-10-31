@@ -192,7 +192,7 @@ ol.steps{margin:4px 0 12px;padding-left:20px} ol.steps li{margin:3px 0}
 <body>
 <script id="vsm-data" type="application/json">{}</script>
 <script id="vsm-summary" type="application/json">{}</script>
-<script id="vsm-ui" type="application/json">{
+<script id="vsm-ui" type="application/json" data-i18n-labels>{
  "en": {
   "langLabel": "Language",
   "trigger": "Trigger",
@@ -297,7 +297,7 @@ ol.steps{margin:4px 0 12px;padding-left:20px} ol.steps li{margin:3px 0}
   "legendTitle": "Legend",
   "logTitle": "Latest changes",
   "contTitle": "Continue this map",
-  "cont1": "Install the value-stream-map skill in your coding agent (Claude Code, Codex or another one that reads skills): ",
+  "cont1": "Install the mf-value-stream-map skill in your coding agent (Claude Code, Codex or another one that reads skills): ",
   "cont2": "Get this map’s data: copy it, or download it as JSON (or save this page as HTML and run the skill’s import).",
   "cont3": "Ask the agent to continue it: save the data as a .json file (or paste it into the conversation and ask the agent to save it), then tell it what changed or what to add.",
   "copy": "Copy the data",
@@ -521,7 +521,7 @@ ol.steps{margin:4px 0 12px;padding-left:20px} ol.steps li{margin:3px 0}
   "legendTitle": "Légende",
   "logTitle": "Dernières modifications",
   "contTitle": "Continuer cette carte",
-  "cont1": "Installez le skill value-stream-map dans votre agent de code (Claude Code, Codex ou un autre agent qui lit les skills) : ",
+  "cont1": "Installez le skill mf-value-stream-map dans votre agent de code (Claude Code, Codex ou un autre agent qui lit les skills) : ",
   "cont2": "Récupérez les données de cette carte : copiez-les, ou téléchargez-les en JSON (ou enregistrez cette page en HTML et lancez l’import du skill).",
   "cont3": "Demandez à l’agent de la continuer : enregistrez les données dans un fichier .json (ou collez-les dans la conversation en lui demandant de l’enregistrer), puis dites-lui ce qui a changé ou ce qu’il faut ajouter.",
   "copy": "Copier les données",
@@ -1094,7 +1094,7 @@ function renderStatic() {
   document.documentElement.lang = lang;
   document.querySelectorAll('[data-t]').forEach((n) => { const v = T()[n.dataset.t]; if (typeof v === 'string') n.textContent = v; });
   $('#hint').textContent = T().hint;
-  $('#contSteps').innerHTML = `<li>${esc(T().cont1)}<a href="https://github.com/manufacture-dev/value-stream-map" target="_blank" rel="noopener">github.com/manufacture-dev/value-stream-map</a></li><li>${esc(T().cont2)}</li><li>${esc(T().cont3)}</li>`;
+  $('#contSteps').innerHTML = `<li>${esc(T().cont1)}<a href="https://github.com/manufacture-dev/skills" target="_blank" rel="noopener">github.com/manufacture-dev/skills</a></li><li>${esc(T().cont2)}</li><li>${esc(T().cont3)}</li>`;
 }
 function update() { drawArrows(); renderDetail(); renderRework(); }
 function renderAll() { renderStatic(); renderHeader(); renderTotals(); renderFlow(); renderTable(); renderMissing(); renderHypPark(); renderLegend(); renderLog(); }

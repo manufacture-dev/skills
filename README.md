@@ -1,38 +1,46 @@
-# value-stream-map
+# Manufacture skills
 
-A skill for coding agents (Claude Code, Codex and others) to create, or keep working on, a **value stream map**: how one real piece of work travels from the request to production, with its stages and steps, wait and work times, rework loops, %C&A and AI uses. The agent builds the map from what people say or write, step by step, checks it stays consistent, and shows it on a neutral default page, locally or published, or on a page in your own design system: an existing map can be redrawn in another design system at any time.
+Open skills for coding agents (Claude Code, Codex and any agent that reads skills: a folder with a `SKILL.md`). Each skill works on its own; together they compose.
 
 Made by [Manufacture](https://manufacture.dev).
 
+| Skill | What it does |
+| --- | --- |
+| [`mf-value-stream-map`](plugins/mf-value-stream-map/skills/mf-value-stream-map/SKILL.md) | Build a value stream map of a delivery flow with an agent: it interviews you (the stream first, the detail after), records what is said, computes the figures and shows the map on a local site or a single page, in any design and language. |
+| [`mf-themes`](plugins/mf-themes/skills/mf-themes/SKILL.md) | Design systems for a page made by an agent: built-in themes (workshop wall, engineering drawing, editorial report), three radically different new directions made on the real page, a board to compare them, or your organisation's colours. |
+| [`mf-i18n`](plugins/mf-i18n/skills/mf-i18n/SKILL.md) | Languages for a page and its data: written in the language you speak, any number of others, whole-text translations kept with the data, translated labels, a switch or a list. |
+
 ## Install
 
-**Claude Code, as a plugin**
+**Claude Code** (all of them, or only those you want):
 
 ```
-/plugin marketplace add manufacture-dev/value-stream-map
-/plugin install value-stream-map@manufacture-value-stream-map
+/plugin marketplace add manufacture-dev/skills
+/plugin install mf-value-stream-map@manufacture-skills
+/plugin install mf-themes@manufacture-skills
+/plugin install mf-i18n@manufacture-skills
 ```
 
-**Claude Code, by hand:** copy `skills/value-stream-map` into `.claude/skills/` of a repository (one project) or `~/.claude/skills/` (all your projects).
+**Codex:** copy `plugins/<plugin>/skills/<skill>` into `.agents/skills/` of a repository or `~/.agents/skills/` (all your projects), then restart Codex; or ask Codex's `$skill-installer` to install it from this repository.
 
-**Codex:** copy `skills/value-stream-map` into `.agents/skills/` of a repository or `~/.agents/skills/` (all your projects), then restart Codex; or ask Codex's `$skill-installer` to install it from this repository.
+**Any other agent that reads skills:** copy `plugins/<plugin>/skills/<skill>` where it looks for them.
 
-**Any other agent that reads skills** (a folder with a `SKILL.md`): copy `skills/value-stream-map` where it looks for them.
-
-Requires Node.js 18 or later (https://nodejs.org); no other dependency, nothing to install with npm. The agent checks it before the first command.
+Requires Node.js 18 or later (https://nodejs.org); nothing to install with npm. The agent checks it before the first command.
 
 ## Use
 
-1. Start a map: an empty one with `node <skill folder>/scripts/vsm.mjs new map.json --title "<the case>" --stages "Story,Build,Review,QA,Release"` (or without `--stages`, from starter stages that you then rename, add, move or remove with the agent as you go), or an existing one: on a published map page, **Continue this map** downloads or copies its data (a `.json` file).
-2. Let the agent interview you: *"Let's map our last feature that went to production, interview me"*. It frames the case first (the use case, what starts it, when it ends, who takes part, the stages), then builds the whole stream with you, as many steps as possible, before any detail; then it goes over what is missing theme by theme (waits, work times, AI uses, rework…), on the whole map or one stage, so nothing is forgotten. Everything stays open to change as you go, the stages and the frame included.
-3. Or bring your own input, for example: *"Let's map how our last feature went to production, in map.json"*, or *"Continue the value stream map in map.json: QA says one story in two comes back because the acceptance criteria are not testable."*
-4. See it: the agent starts a local site (`serve`) that reloads on every change, on a default page with built-in design systems to compare side by side (or three new directions made for you, or your organisation's own), in as many languages as you want; or it writes one HTML file (`page`) to open, send or host anywhere. On Claude, it can also publish it as an artifact.
-5. Ask for another look, for example: *"Use our colours for the map's page"* or *"Redo the map's page in our design system"*. The page carries the map's data, so it can be picked up again later.
+- *"Let's map our last feature that went to production, interview me."* The agent frames the case in the language you speak, builds the whole stream with you, then goes over what is missing theme by theme, and shows the map as it grows on a local site.
+- *"Show me other designs for the map"*, *"use our colours"*, *"make us three new styles"* (mf-themes).
+- *"Add English and German to the page"* (mf-i18n).
 
-To try it without your own data, start from the fictional example [`examples/lumen-report-export.json`](examples/lumen-report-export.json) (Lumen Insights, a made-up company: eight stages (one not detailed yet), 21 boxes, an upstream step, parallel work, six rework loops, AI uses at every level, French translations): *"Make the page for examples/lumen-report-export.json"*.
+To try without your own data: [`examples/lumen-report-export.json`](examples/lumen-report-export.json), a fictional company's map (Lumen Insights): *"Make the page for examples/lumen-report-export.json"*.
 
-What the agent follows (model, rules, commands) is in [`skills/value-stream-map/SKILL.md`](skills/value-stream-map/SKILL.md).
+## How the library is built
+
+- `plugins/<plugin>/skills/<skill>/`: each skill, self-contained (its `SKILL.md`, `scripts/`, `assets/`), so it can be copied alone.
+- `lib/`: the code shared by several skills (`themes.mjs`, `i18n.mjs`). `node tools/sync.mjs` copies it into each skill's `scripts/lib/`, and the built-in themes of mf-themes into the skills that ship them; edit the source, never a copy.
+- `node tools/check.mjs` before committing (also run in CI): copies in sync, themes valid, the example map valid and its page built in every design.
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). Fonts in the themes are under their own free licences (OFL-1.1), next to each font.

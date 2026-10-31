@@ -29,6 +29,9 @@ if (Number(process.versions.node.split('.')[0]) < 18) {
   process.exit(2);
 }
 const DEFAULT_PAGE = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'default-page.html');
+// Themes and languages come from the shared modules (mf-themes, mf-i18n), copied into scripts/lib/ by the repository.
+import { listThemes, themeCss as themeCssOf, themeInfo as themeInfoOf, withTheme, designsBoard } from './lib/themes.mjs';
+import { checkLanguages, textsOf as textsOfData, addTranslations, labelsToTranslate } from './lib/i18n.mjs';
 
 export const MARKER_KINDS = ['accelerates', 'slows', 'bottleneck', 'new-bottleneck', 'pain', 'new-pain', 'duplicate', 'not-done'];
 export const AI_LEVELS = ['assistant', 'tooled', 'prepares', 'chains'];
@@ -36,10 +39,15 @@ export const STAGE_STATUS = ['assumed', 'confirmed'];
 export const HYPOTHESIS_STATUS = ['open', 'confirmed', 'refuted', 'partial'];
 // The stages a new map starts from when none are given; the team changes them as the discussion goes (stage ops).
 // Themes: "neutral" is the default page as it is; each folder of assets/themes/ is a built-in design system
-// (theme.json, theme.css, fonts/). A map may also name its own theme folder, by a path relative to the map.
+// (the mf-themes library, copied here). A map may also name its own theme folder, by a path relative to the map.
 const THEMES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'themes');
-export const THEMES = ['neutral', ...(existsSync(THEMES_DIR) ? readdirSync(THEMES_DIR).filter((d) => existsSync(join(THEMES_DIR, d, 'theme.css'))).sort() : [])];
-const LANG_RE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
+export const THEMES = listThemes(THEMES_DIR);
+const themeCss = (theme, base, tokens) => themeCssOf(theme, { dir: THEMES_DIR, base, tokens });
+const themeInfo = (t) => themeInfoOf(t, { dir: THEMES_DIR });
+const designsIndex = (items) => designsBoard(items, 'Map designs');
+// The map's texts to translate: every string except ids, references and codes (and the stage ids of case.stages).
+const NOT_TEXT = ['from', 'to', 'fromStep', 'toStep', 'level', 'kind', 'status', 'phase', 'at', 'stage', 'step', 'loop', 'theme', 'themeTokens', 'asked', 'now', 'roster', 'questions', 'notes', 'unmapped', 'pending'];
+const textsOf = (data) => textsOfData({ ...data, case: { ...(data.case || {}), stages: undefined } }, NOT_TEXT);
 export const STARTER_STAGES = ['Request', 'Refinement', 'Build', 'Review', 'QA', 'Release'];
 const slug = (x) => String(x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 // Write through a temporary file then rename: the preview never reads a half-written map.
@@ -135,16 +143,7 @@ export function validate(data) {
   });
   (data.notes || []).forEach((x, i) => { if (!x || typeof x.text !== 'string' || !x.text) err(`notes[${i}].text`, 'required string'); });
   if (data.asked !== undefined && (!Array.isArray(data.asked) || data.asked.some((k) => typeof k !== 'string'))) err('asked', 'list of question keys');
-  // Languages: the first is the one the map is written in; i18n holds the others, ui the page labels of any language.
-  if (data.languages !== undefined) {
-    if (!Array.isArray(data.languages) || !data.languages.length || data.languages.some((l) => typeof l !== 'string' || !LANG_RE.test(l))) err('languages', 'list of language codes (en, fr, de, pt-BR…), the map\'s own language first');
-    else {
-      if (new Set(data.languages).size !== data.languages.length) err('languages', 'duplicate code');
-      for (const l of Object.keys(data.i18n || {})) if (!data.languages.includes(l) || l === data.languages[0]) err(`i18n.${l}`, `"${l}" is not one of the other languages (${data.languages.slice(1).join(', ') || 'none'})`);
-    }
-  }
-  for (const [l, d] of Object.entries(data.i18n || {})) if (!d || typeof d !== 'object' || Array.isArray(d) || Object.values(d).some((v) => typeof v !== 'string')) err(`i18n.${l}`, 'an object: text in the map\'s language → its translation');
-  if (data.ui !== undefined && (typeof data.ui !== 'object' || Array.isArray(data.ui))) err('ui', 'an object: language code → page labels (see labels)');
+  for (const e of checkLanguages(data)) errors.push(e);
   if (data.theme !== undefined && (typeof data.theme !== 'string' || !data.theme)) err('theme', `a built-in theme (${THEMES.join(', ')}) or the path of a theme folder, relative to the map`);
   if (data.themeTokens !== undefined) {
     const tt = data.themeTokens, ok = (o) => o === undefined || (o && typeof o === 'object' && Object.keys(o).every((k) => /^--[\w-]+$/.test(k)));
@@ -155,52 +154,6 @@ export function validate(data) {
 
 // Put the map (vsm-data) and its figures (vsm-summary) into a page: existing tags are replaced in place; new ones
 // go before the page's first script, so a script that reads them at load finds them.
-// The theme's CSS for a page: its fonts as data URIs (so the page stays one file, offline, and works where only
-// inline resources load), its theme.css, then the map's themeTokens. `theme` is a built-in name, a folder path
-// (absolute, or relative to `base`), or neutral/empty for none.
-function themeCss(theme, base, tokens) {
-  let css = '';
-  if (theme && theme !== 'neutral') {
-    const dir = THEMES.includes(theme) ? join(THEMES_DIR, theme) : resolve(base || '.', theme);
-    if (!existsSync(join(dir, 'theme.css'))) throw new Error(`theme "${theme}": no theme.css in ${dir} (built-in: ${THEMES.join(', ')})`);
-    const meta = existsSync(join(dir, 'theme.json')) ? JSON.parse(readFileSync(join(dir, 'theme.json'), 'utf8')) : {};
-    for (const f of meta.fonts || []) {
-      const b64 = readFileSync(join(dir, f.file)).toString('base64');
-      css += `@font-face{font-family:"${f.family}";src:url(data:font/woff2;base64,${b64}) format("woff2");font-weight:${f.weight || '400'};font-style:${f.style || 'normal'};font-display:swap${f.unicodeRange ? `;unicode-range:${f.unicodeRange}` : ''}}\n`;
-    }
-    css += readFileSync(join(dir, 'theme.css'), 'utf8');
-  }
-  const decl = (o) => Object.entries(o || {}).filter(([k]) => /^--[\w-]+$/.test(k)).map(([k, v]) => `${k}:${String(v).replace(/[;{}<]/g, '')}`).join(';');
-  if (tokens && (tokens.light || tokens.dark)) css += `\n:root{${decl(tokens.light)}}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){${decl(tokens.dark)}}}:root[data-theme="dark"]{${decl(tokens.dark)}}`;
-  return css;
-}
-// Put the theme in the page: one <style id="vsm-theme"> after the page's own styles (replaced on the next run).
-function withTheme(html, css) {
-  const tag = `<style id="vsm-theme">\n${css.replace(/<\/style/gi, '<\\/style')}\n</style>`;
-  if (/<style id="vsm-theme">[\s\S]*?<\/style>/.test(html)) return html.replace(/<style id="vsm-theme">[\s\S]*?<\/style>/, () => tag);
-  const i = html.indexOf('</style>');
-  return i < 0 ? tag + html : html.slice(0, i + 8) + '\n' + tag + html.slice(i + 8);
-}
-
-function themeInfo(t) {
-  if (!t || t === 'neutral') return 'The default page: sober, system fonts, greys.';
-  const dir = THEMES.includes(t) ? join(THEMES_DIR, t) : resolve(t);
-  try { return JSON.parse(readFileSync(join(dir, 'theme.json'), 'utf8')).description || ''; } catch (e) { return ''; }
-}
-
-// A page that shows each built-in theme in a frame, with its name: to choose a design.
-function designsIndex(items) {
-  const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Map designs</title>
-<style>:root{color-scheme:light dark}body{margin:0;font:14px/1.4 system-ui,sans-serif;background:Canvas;color:CanvasText;padding:16px}
-h1{font-size:18px;margin:0 0 4px}p{margin:0 0 16px;opacity:.75}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:16px}
-figure{margin:0;border:1px solid color-mix(in srgb,CanvasText 20%,transparent);border-radius:8px;overflow:hidden}
-figcaption{padding:8px 12px;font-weight:600;display:flex;justify-content:space-between;gap:12px}figcaption small{font-weight:400;opacity:.75}.frame{height:620px;overflow:hidden;position:relative}iframe{width:200%;height:1240px;border:0;display:block;transform:scale(.5);transform-origin:0 0}</style></head>
-<body><h1>Map designs</h1><p>The same map in each design. Say which one to keep.</p><div class="grid">
-${items.map(([n, u, d]) => `<figure><figcaption><span>${esc(n)}${d ? `<small> · ${esc(d)}</small>` : ''}</span><a href="${esc(u)}" target="_blank" rel="noopener">open</a></figcaption><div class="frame"><iframe src="${esc(u)}" loading="lazy" title="${esc(n)}"></iframe></div></figure>`).join('\n')}
-</div></body></html>`;
-}
-
 function embedIn(html, data) {
   for (const [id, v] of [['vsm-data', data], ['vsm-summary', summarize(data)]]) {
     const tag = jsonTag(id, v);
@@ -425,21 +378,6 @@ function questionsFor(data) {
   return { flow, enrich, hints };
 }
 
-// The map's texts a page shows, in the map's language: every string value except ids, references and codes.
-// i18n.<lang> maps each of them (whole text) to its translation.
-const NOT_TEXT = new Set(['id', 'from', 'to', 'fromStep', 'toStep', 'level', 'kind', 'status', 'phase', 'at', 'stage', 'step', 'loop', 'theme']);
-function textsOf(data) {
-  const out = new Set();
-  const walk = (v, key) => {
-    if (typeof v === 'string') { if (!NOT_TEXT.has(key) && v.trim() && !/^[\d\s.,:%~–-]+$/.test(v)) out.add(v); return; }
-    if (Array.isArray(v)) { v.forEach((x) => walk(x, key)); return; }
-    if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, k);
-  };
-  const { i18n, ui, asked, languages, themeTokens, now, roster, questions, notes, unmapped, pending, ...rest } = data;
-  walk({ ...rest, case: { ...(data.case || {}), stages: undefined } });
-  return [...out];
-}
-
 // The figures a page shows, computed once here so every page (whatever its design) shows the same numbers.
 // Times are in working days. A stage's times are its own when it has no sub-steps, else its sub-steps':
 // a group of parallel sub-steps (a sub-step marked parallel runs alongside the one before) counts once,
@@ -533,12 +471,9 @@ if (cmd === 'labels') {
   // The default page's labels in English (or the keys still missing for a map's language): translate the values,
   // keep the keys, the {n}/{m}/{b}/{l} placeholders and the one/other forms, then set them in map.ui.<lang>.
   const l = arg('--lang'); if (!l) { console.error('labels needs --lang <code>'); process.exit(2); }
-  const ui = JSON.parse(readFileSync(DEFAULT_PAGE, 'utf8').match(/<script id="vsm-ui" type="application\/json">([\s\S]*?)<\/script>/)[1]);
   const mapFile = fileArg && !fileArg.startsWith('--') ? fileArg : null;
-  const have = { ...(ui[l] || {}), ...((mapFile && existsSync(mapFile) ? JSON.parse(readFileSync(mapFile, 'utf8')).ui || {} : {})[l] || {}) };
-  const out = process.argv.includes('--missing') ? Object.fromEntries(Object.entries(ui.en).filter(([k]) => !(k in have))) : ui.en;
-  console.log(JSON.stringify(out, null, 2));
-  if (ui[l]) console.error(`(the page already has "${l}" built in; --missing lists only what a map would still need)`);
+  const html = readFileSync(DEFAULT_PAGE, 'utf8');
+  console.log(JSON.stringify(labelsToTranslate(html, l, { data: mapFile && existsSync(mapFile) ? JSON.parse(readFileSync(mapFile, 'utf8')) : null, missing: process.argv.includes('--missing') }), null, 2));
   process.exit(0);
 }
 if (!cmd || !fileArg) {
@@ -619,9 +554,7 @@ if (cmd === 'validate') {
         else if (op.stage !== undefined) stageOp(data, op.stage, at);
         else if (op.translate !== undefined) {
           // {"translate": {"lang": "de", "texts": {"<text in the map's language>": "<translation>", …}}}: texts hold dots, so no path.
-          const { lang: l, texts: tx } = op.translate || {};
-          if (!l || !tx || typeof tx !== 'object') throw new Error('translate: {"lang", "texts": {…}}');
-          data.i18n = data.i18n || {}; data.i18n[l] = { ...(data.i18n[l] || {}), ...tx };
+          addTranslations(data, op.translate);
         }
         else if (op.log !== undefined) (data.log = data.log || []).push({ at, text: op.log });
         else if (op.set !== undefined) { const r = walk(op.set, null); r.parent[r.key] = op.value; }

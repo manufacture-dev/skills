@@ -1,0 +1,15 @@
+{
+  "name": "mf-themes",
+  "description": "Design systems for a page made by an agent: built-in themes, three radically different new directions on the real page, a board to compare them, an organisation's colours.",
+  "author": {
+    "name": "Manufacture"
+  },
+  "repository": "https://github.com/manufacture-dev/skills",
+  "license": "MIT",
+  "version": "0.2.0",
+  "keywords": [
+    "design system",
+    "themes",
+    "css"
+  ]
+}

@@ -1,16 +1,32 @@
 {
-  "name": "manufacture-value-stream-map",
-  "owner": { "name": "Manufacture" },
+  "name": "manufacture-skills",
+  "owner": {
+    "name": "Manufacture"
+  },
   "metadata": {
-    "description": "Manufacture's value stream map skill for Claude Code.",
-    "version": "0.1.0"
+    "description": "Manufacture's open skills for coding agents.",
+    "version": "0.2.0"
   },
   "plugins": [
     {
-      "name": "value-stream-map",
-      "source": "./",
-      "description": "Continue and complete a value stream map with an agent; validate, figures, a page in any design system.",
-      "version": "0.1.0",
+      "name": "mf-value-stream-map",
+      "source": "./plugins/mf-value-stream-map",
+      "description": "Build and complete a value stream map with an agent.",
+      "version": "0.2.0",
+      "category": "productivity"
+    },
+    {
+      "name": "mf-themes",
+      "source": "./plugins/mf-themes",
+      "description": "Design systems for a page made by an agent.",
+      "version": "0.2.0",
+      "category": "design"
+    },
+    {
+      "name": "mf-i18n",
+      "source": "./plugins/mf-i18n",
+      "description": "Languages for a page and its data.",
+      "version": "0.2.0",
       "category": "productivity"
     }
   ]

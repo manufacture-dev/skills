@@ -1,5 +1,5 @@
 ---
-name: value-stream-map
+name: mf-value-stream-map
 description: Use when a value stream map of a delivery flow (from the request to production) must be created from scratch, continued, completed, corrected or validated, or turned into a page in any design system (or redesigned in another one): when someone wants to map how their work flows, describes or writes who does what, how long work waits, what comes back, where AI helps, pastes notes or answers from a workshop, or wants to keep working on a map from a page they have.
 license: MIT
 ---
@@ -12,7 +12,7 @@ A value stream map shows how one real piece of work travels from the request to 
 
 Node.js 18 or later; nothing else (no package to install). Before the first command, check `node --version`. If Node is missing or older, say so and give the install for the person's system: https://nodejs.org (LTS), `brew install node` (macOS), `winget install OpenJS.NodeJS.LTS` (Windows), the distribution's package (Linux). Do not work around it by editing the JSON and the figures by hand: the figures come from the CLI. The script stops with the same advice on an older Node.
 
-Run the CLI from the project, with the path to this skill's `scripts/vsm.mjs` (where the agent installed the skill: `.claude/skills/value-stream-map/` for Claude Code, `.agents/skills/value-stream-map/` for Codex, or another folder); below, `scripts/vsm.mjs` stands for that path:
+Run the CLI from the project, with the path to this skill's `scripts/vsm.mjs` (where the agent installed the skill: `.claude/skills/mf-value-stream-map/` or the plugin's folder for Claude Code, `.agents/skills/mf-value-stream-map/` for Codex, or another folder); below, `scripts/vsm.mjs` stands for that path:
 
 ```bash
 node scripts/vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"] [--trigger <text>] [--end <text>] [--team "<A>,<B>"]
@@ -96,6 +96,8 @@ Each op writes its own log line; add a `{"log"}` op saying who asked for it. Cha
 
 ## Languages
 
+This skill carries the code of **mf-i18n** (the same fields and rules); when mf-i18n is installed too, follow it for anything this section does not say.
+
 `languages` lists the map's languages, its own first: the language of the conversation, unless asked otherwise (`["en"]` when not set); any language works. Every text of the map is written in the first one, and `i18n.<code>` gives each text (whole) in each other language. The page offers a switch for two languages and a list for more.
 
 - **Map texts:** `texts <map.json> --lang <code> --missing` lists the texts without a translation; add them with one `{"translate": {"lang": "<code>", "texts": {"<text>": "<translation>", …}}}` op. A name that reads the same (a person, a tool, "QA") gets itself as translation, so the list empties. Translate as you go: each change that adds a text adds its translations in the same `patch`.
@@ -141,7 +143,7 @@ Each op writes its own log line; add a `{"log"}` op saying who asked for it. Cha
 
 ## The page
 
-The page has two layers. **The base** (`assets/default-page.html`, its CSS in `@layer page`) holds everything the layout rules below require: what is shown, the flow, the figures, the behaviour; a design never removes or changes any of it. **A theme** dresses it: typography, surfaces, component shapes, header, ornaments, spacing, colours. Changing colours alone is not a design: a theme is a design system of its own.
+This skill carries the code and the built-in designs of **mf-themes**; when mf-themes is installed too, follow it to make new design systems (it holds the full method and its checks). The page has two layers. **The base** (`assets/default-page.html`, its CSS in `@layer page`) holds everything the layout rules below require: what is shown, the flow, the figures, the behaviour; a design never removes or changes any of it. **A theme** dresses it: typography, surfaces, component shapes, header, ornaments, spacing, colours. Changing colours alone is not a design: a theme is a design system of its own.
 
 - **Built-in themes:** `themes` lists them, each with what it is. `neutral` (the base as it is, sober, system fonts) is the default; the others are complete design systems, very different from each other (for example the workshop wall with sticky notes, the engineering drawing with its title block, the editorial report). Choose with the person: `designs <map.json> --output <dir>` (or `/designs` on `serve`) shows the real map in each of them side by side; then `{"set": "theme", "value": "<name>"}`.
 - **The organisation's colours on a theme:** `themeTokens` in the map (`{"light": {"--work": "#0055aa", "--font": "Inter, sans-serif"}, "dark": {…}}`, the custom properties at the top of the base page), for "keep this design, with our colours and font". Set both light and dark.

@@ -1,0 +1,16 @@
+{
+  "name": "mf-value-stream-map",
+  "description": "Build and complete a value stream map of a delivery flow with an agent: interview, stages and steps, wait and work times, rework, %C&A, AI uses; figures, a local site and a page in any design and language.",
+  "author": {
+    "name": "Manufacture"
+  },
+  "repository": "https://github.com/manufacture-dev/skills",
+  "license": "MIT",
+  "version": "0.2.0",
+  "keywords": [
+    "value stream mapping",
+    "vsm",
+    "lean",
+    "flow"
+  ]
+}
