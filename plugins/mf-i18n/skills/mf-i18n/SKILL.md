@@ -3,7 +3,7 @@ name: mf-i18n
 description: "Use when a page or its JSON data must be offered in several languages, or a language must be added, translated or checked (\"in French and English\", \"add German\", \"translate the map\", \"the page should switch language\"): one language to write in (the conversation's), any number of others, whole-text translations kept with the data, the page's own labels translated too, a switch for two languages and a list for more."
 license: MIT
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # Languages for a page and its data

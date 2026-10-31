@@ -3,7 +3,7 @@ name: mf-value-stream-map
 description: "Use when a value stream map of a delivery flow (from the request to production) must be created from scratch, continued, completed, corrected or validated, or turned into a page in any design system (or redesigned in another one): when someone wants to map how their work flows, describes or writes who does what, how long work waits, what comes back, where AI helps, pastes notes or answers from a workshop, or wants to keep working on a map from a page they have."
 license: MIT
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # Value stream map

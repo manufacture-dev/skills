@@ -8,7 +8,7 @@
   "homepage": "https://github.com/manufacture-dev/skills/tree/main/plugins/mf-i18n",
   "repository": "https://github.com/manufacture-dev/skills",
   "license": "MIT",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "keywords": [
     "i18n",
     "translation",

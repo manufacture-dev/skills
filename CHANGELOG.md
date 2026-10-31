@@ -4,6 +4,8 @@ One version for the whole library, in [semver](https://semver.org). While it is 
 
 ## Unreleased
 
+## 0.3.0 (2026-10-31)
+
 - **Versions.** One version for the library, written in each skill (`metadata.version` in `SKILL.md`) and plugin; this changelog; `tools/release.mjs`. Maps now carry `schemaVersion` (1): a map from a newer skill is refused with a message instead of being misread; a map without it is read as 1.
 - **Documentation.** A README for each plugin; the repository's README says how to install with Claude Code, Codex and the skills CLI, where the skills work, and everything they run (no network, no telemetry; a local site on 127.0.0.1 only when asked); screenshots of the example map.
 - **mf-value-stream-map:** the page method (new designs, the layout every page keeps, what it must show) moves to `references/page.md`, read only when making a design or a page of your own, so the skill loads lighter; the "Continue this map" link points to this repository.
