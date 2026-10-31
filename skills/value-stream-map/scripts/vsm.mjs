@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Value stream map: create, validate, outline, edit, compute its figures, embed it in a page, import it from one.
 // The page itself is written by the agent, in whatever design system it is given (see SKILL.md). No dependencies, Node 18+.
-//   node vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"] [--client <name>] [--trigger <text>] [--end <text>] [--team "<A>,<B>"]
+//   node vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"] [--client <name>] [--trigger <text>] [--end <text>] [--team "<A>,<B>"] [--languages "en,fr"]
 //                                                          (default stages: the starter stages)
 //   node vsm.mjs validate <map.json>
 //   node vsm.mjs outline  <map.json>                       (compact view for an agent: ids and what each box holds)
@@ -13,7 +13,10 @@
 //   node vsm.mjs embed    <map.json> --page <page.html>    (put the map and its figures into the page, replacing any previous copy)
 //   node vsm.mjs import   <page.html> --output <map.json> [--force]   (take the map back out of a page)
 //   node vsm.mjs page     <map.json> --output <page.html> [--force]   (the default page, with the map in it: a standalone file)
-//   node vsm.mjs serve    <map.json> [--page <page.html>] [--port 4173]   (local site that reloads on every change)
+//   node vsm.mjs serve    <map.json> [--page <page.html>] [--port 4173]   (local site that reloads on every change; /designs compares the themes)
+//   node vsm.mjs texts    <map.json> [--lang <code>] [--missing]          (the map's texts to translate, as JSON)
+//   node vsm.mjs labels   [<map.json>] --lang <code> [--missing]          (the default page's labels, in English, to translate into map.ui.<code>)
+//   node vsm.mjs designs  <map.json> --output <dir>                       (one page per built-in theme, and index.html to compare them)
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, statSync, renameSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +34,8 @@ export const AI_LEVELS = ['assistant', 'tooled', 'prepares', 'chains'];
 export const STAGE_STATUS = ['assumed', 'confirmed'];
 export const HYPOTHESIS_STATUS = ['open', 'confirmed', 'refuted', 'partial'];
 // The stages a new map starts from when none are given; the team changes them as the discussion goes (stage ops).
+export const THEMES = ['neutral', 'blueprint', 'graphite', 'soft', 'contrast'];
+const LANG_RE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 export const STARTER_STAGES = ['Request', 'Refinement', 'Build', 'Review', 'QA', 'Release'];
 const slug = (x) => String(x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 // Write through a temporary file then rename: the preview never reads a half-written map.
@@ -126,11 +131,39 @@ export function validate(data) {
   });
   (data.notes || []).forEach((x, i) => { if (!x || typeof x.text !== 'string' || !x.text) err(`notes[${i}].text`, 'required string'); });
   if (data.asked !== undefined && (!Array.isArray(data.asked) || data.asked.some((k) => typeof k !== 'string'))) err('asked', 'list of question keys');
+  // Languages: the first is the one the map is written in; i18n holds the others, ui the page labels of any language.
+  if (data.languages !== undefined) {
+    if (!Array.isArray(data.languages) || !data.languages.length || data.languages.some((l) => typeof l !== 'string' || !LANG_RE.test(l))) err('languages', 'list of language codes (en, fr, de, pt-BR…), the map\'s own language first');
+    else {
+      if (new Set(data.languages).size !== data.languages.length) err('languages', 'duplicate code');
+      for (const l of Object.keys(data.i18n || {})) if (!data.languages.includes(l) || l === data.languages[0]) err(`i18n.${l}`, `"${l}" is not one of the other languages (${data.languages.slice(1).join(', ') || 'none'})`);
+    }
+  }
+  for (const [l, d] of Object.entries(data.i18n || {})) if (!d || typeof d !== 'object' || Array.isArray(d) || Object.values(d).some((v) => typeof v !== 'string')) err(`i18n.${l}`, 'an object: text in the map\'s language → its translation');
+  if (data.ui !== undefined && (typeof data.ui !== 'object' || Array.isArray(data.ui))) err('ui', 'an object: language code → page labels (see labels)');
+  if (data.theme !== undefined && !THEMES.includes(data.theme)) err('theme', `one of ${THEMES.join(', ')}`);
+  if (data.themeTokens !== undefined) {
+    const tt = data.themeTokens, ok = (o) => o === undefined || (o && typeof o === 'object' && Object.keys(o).every((k) => /^--[\w-]+$/.test(k)));
+    if (!tt || typeof tt !== 'object' || !ok(tt.light) || !ok(tt.dark)) err('themeTokens', '{"light": {"--token": "value"}, "dark": {…}} (CSS custom properties of the page)');
+  }
   return errors;
 }
 
 // Put the map (vsm-data) and its figures (vsm-summary) into a page: existing tags are replaced in place; new ones
 // go before the page's first script, so a script that reads them at load finds them.
+// A page that shows each built-in theme in a frame, with its name: to choose a design.
+function designsIndex(items) {
+  const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Map designs</title>
+<style>:root{color-scheme:light dark}body{margin:0;font:14px/1.4 system-ui,sans-serif;background:Canvas;color:CanvasText;padding:16px}
+h1{font-size:18px;margin:0 0 4px}p{margin:0 0 16px;opacity:.75}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:16px}
+figure{margin:0;border:1px solid color-mix(in srgb,CanvasText 20%,transparent);border-radius:8px;overflow:hidden}
+figcaption{padding:8px 12px;font-weight:600;display:flex;justify-content:space-between}.frame{height:620px;overflow:hidden;position:relative}iframe{width:200%;height:1240px;border:0;display:block;transform:scale(.5);transform-origin:0 0}</style></head>
+<body><h1>Map designs</h1><p>The same map in each built-in theme. Say which one to keep; any of them can take your organisation's colours and font.</p><div class="grid">
+${items.map(([n, u]) => `<figure><figcaption>${esc(n)}<a href="${esc(u)}" target="_blank" rel="noopener">open</a></figcaption><div class="frame"><iframe src="${esc(u)}" loading="lazy" title="${esc(n)}"></iframe></div></figure>`).join('\n')}
+</div></body></html>`;
+}
+
 function embedIn(html, data) {
   for (const [id, v] of [['vsm-data', data], ['vsm-summary', summarize(data)]]) {
     const tag = jsonTag(id, v);
@@ -286,7 +319,7 @@ function stageOp(data, op, at) {
 // box still missing it (waits, work times, AI uses, rework, %C&A, who, tools, then what is still to confirm), for
 // the whole map or one stage. Each box keeps its own key; a key in data.asked was asked and got no answer
 // ("we don't know", "no AI there"), so it is not asked again.
-export const THEMES = ['wait', 'work', 'ai', 'rework', 'ca', 'who', 'tools', 'check'];
+export const Q_THEMES = ['wait', 'work', 'ai', 'rework', 'ca', 'who', 'tools', 'check'];
 function questionsFor(data) {
   const asked = new Set(data.asked || []);
   const c = data.case || {}, stages = data.stages || [], loops = data.loops || [];
@@ -340,7 +373,7 @@ function questionsFor(data) {
   const hyp = (data.hypotheses || []).filter((h) => (h.status || 'open') === 'open' && !asked.has(`hypothesis:${h.id}`));
   if (hyp.length) enrich.push({ pass: 'enrich', theme: 'check', stage: null, boxes: hyp.map((h) => ({ key: `hypothesis:${h.id}`, name: h.text })), question: `Does what was said confirm or refute: ${hyp.map((h) => `"${h.text}"`).join('; ')}?` });
   if (!(data.parking || []).length && !asked.has('case:parking')) enrich.push({ pass: 'enrich', theme: 'check', stage: null, boxes: [{ key: 'case:parking', name: 'ideas for later' }], question: 'Any idea for doing it differently, to note for later?' });
-  enrich.sort((a, b) => THEMES.indexOf(a.theme) - THEMES.indexOf(b.theme));
+  enrich.sort((a, b) => Q_THEMES.indexOf(a.theme) - Q_THEMES.indexOf(b.theme));
   // While the stream is built, a few detail questions are worth asking at once, on the boxes where they matter
   // most: the wait before a box that hands over or waits by nature (a review, a validation, a meeting, a release
   // train), and the AI use on a box that writes, codes or tests. Optional: never a prerequisite to go on.
@@ -353,6 +386,21 @@ function questionsFor(data) {
     if (empty(x.ai) && AI.test(x.name) && !asked.has(`${k}:ai`)) hints.push({ pass: 'flow', theme: 'ai', key: `${k}:ai`, ...at, optional: true, question: `Is AI used for "${x.name}"? For what?` });
   }));
   return { flow, enrich, hints };
+}
+
+// The map's texts a page shows, in the map's language: every string value except ids, references and codes.
+// i18n.<lang> maps each of them (whole text) to its translation.
+const NOT_TEXT = new Set(['id', 'from', 'to', 'fromStep', 'toStep', 'level', 'kind', 'status', 'phase', 'at', 'stage', 'step', 'loop', 'theme']);
+function textsOf(data) {
+  const out = new Set();
+  const walk = (v, key) => {
+    if (typeof v === 'string') { if (!NOT_TEXT.has(key) && v.trim() && !/^[\d\s.,:%~–-]+$/.test(v)) out.add(v); return; }
+    if (Array.isArray(v)) { v.forEach((x) => walk(x, key)); return; }
+    if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, k);
+  };
+  const { i18n, ui, asked, languages, themeTokens, now, roster, questions, notes, unmapped, pending, ...rest } = data;
+  walk({ ...rest, case: { ...(data.case || {}), stages: undefined } });
+  return [...out];
 }
 
 // The figures a page shows, computed once here so every page (whatever its design) shows the same numbers.
@@ -440,8 +488,20 @@ const TAG = (id) => new RegExp(`<script id="${id}" type="application/json">[\\s\
 const jsonTag = (id, v) => `<script id="${id}" type="application/json">${JSON.stringify(v).replace(/</g, '\\u003c')}</script>`;
 
 const [cmd, fileArg] = process.argv.slice(2);
+if (cmd === 'labels') {
+  // The default page's labels in English (or the keys still missing for a map's language): translate the values,
+  // keep the keys, the {n}/{m}/{b}/{l} placeholders and the one/other forms, then set them in map.ui.<lang>.
+  const l = arg('--lang'); if (!l) { console.error('labels needs --lang <code>'); process.exit(2); }
+  const ui = JSON.parse(readFileSync(DEFAULT_PAGE, 'utf8').match(/<script id="vsm-ui" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  const mapFile = fileArg && !fileArg.startsWith('--') ? fileArg : null;
+  const have = { ...(ui[l] || {}), ...((mapFile && existsSync(mapFile) ? JSON.parse(readFileSync(mapFile, 'utf8')).ui || {} : {})[l] || {}) };
+  const out = process.argv.includes('--missing') ? Object.fromEntries(Object.entries(ui.en).filter(([k]) => !(k in have))) : ui.en;
+  console.log(JSON.stringify(out, null, 2));
+  if (ui[l]) console.error(`(the page already has "${l}" built in; --missing lists only what a map would still need)`);
+  process.exit(0);
+}
 if (!cmd || !fileArg) {
-  console.error('usage: vsm.mjs <new|validate|outline|patch|detail|summary|questions|embed|import|page|serve> <file> [--ops <json>] [--stage <id> --steps <json> [--to <id>]] [--page <page.html>] [--output <file>] [--force] [--text]');
+  console.error('usage: vsm.mjs <new|validate|outline|patch|detail|summary|questions|embed|import|page|serve|texts|labels|designs> <file> [--ops <json>] [--stage <id> --steps <json> [--to <id>]] [--page <page.html>] [--output <file>] [--force] [--text]');
   process.exit(2);
 }
 const file = resolve(fileArg);
@@ -453,7 +513,8 @@ if (cmd === 'new') {
   if (!arg('--title')) { console.error('new needs --title [--stages "<Stage 1>,<Stage 2>,…"]'); process.exit(2); }
   const stages = names.map((n) => ({ id: slug(n), name: n, status: 'assumed', work: null, wait: null, ai: [], markers: [] }));
   const team = String(arg('--team') || '').split(',').map((x) => x.trim()).filter(Boolean);
-  const data = { case: { client: arg('--client') || '', title: arg('--title'), trigger: arg('--trigger') || '', end: arg('--end') || '', team, stages: stages.map((x) => x.id) }, stages, loops: [], parking: [], hypotheses: [], log: [] };
+  const languages = String(arg('--languages') || 'en').split(',').map((x) => x.trim()).filter(Boolean);
+  const data = { languages, case: { client: arg('--client') || '', title: arg('--title'), trigger: arg('--trigger') || '', end: arg('--end') || '', team, stages: stages.map((x) => x.id) }, stages, loops: [], parking: [], hypotheses: [], log: [] };
   const errs = validate(data);
   if (errs.length) { console.error(`INVALID:\n- ${errs.join('\n- ')}`); process.exit(1); }
   writeAtomic(file, data);
@@ -485,6 +546,7 @@ if (cmd === 'validate') {
   //   {"set": "<path>", "value": …}  {"push": "<path>", "value": …}  {"insert": "<path>", "at": 0, "value": …}  {"del": "<path>"}  {"log": "text"}
   //   {"detail": {"stage": "<id>", "steps": [...], "to": "<sub-step id>"}}   (split a stage, then go on with other ops)
   //   {"stage": {"add"|"rename"|"move"|"remove": …}}   (change the stages themselves: see stageOp)
+  //   {"translate": {"lang": "<code>", "texts": {"<text>": "<translation>"}}}   (add translations; see texts)
   // A path is dot-separated; inside a list a segment picks the item whose id (or name, or AI label) matches, or an index:
   //   "stages.build.steps.code.work", "stages.qa.steps.smoke-tests.ai", "loops.qa-to-build.count", "hypotheses.h1.status".
   let code = 0;
@@ -514,6 +576,12 @@ if (cmd === 'validate') {
       for (const op of Array.isArray(ops) ? ops : [ops]) {
         if (op.detail !== undefined) detailStage(data, op.detail.stage, op.detail.steps, op.detail.to, at);
         else if (op.stage !== undefined) stageOp(data, op.stage, at);
+        else if (op.translate !== undefined) {
+          // {"translate": {"lang": "de", "texts": {"<text in the map's language>": "<translation>", …}}}: texts hold dots, so no path.
+          const { lang: l, texts: tx } = op.translate || {};
+          if (!l || !tx || typeof tx !== 'object') throw new Error('translate: {"lang", "texts": {…}}');
+          data.i18n = data.i18n || {}; data.i18n[l] = { ...(data.i18n[l] || {}), ...tx };
+        }
         else if (op.log !== undefined) (data.log = data.log || []).push({ at, text: op.log });
         else if (op.set !== undefined) { const r = walk(op.set, null); r.parent[r.key] = op.value; }
         else if (op.insert !== undefined) { const r = walk(op.insert, []); if (r.ensure) r.ensure(); const l = r.parent[r.key]; if (!Array.isArray(l)) throw new Error(`"${op.insert}" is not a list`); l.splice(Math.max(0, Math.min(Number(op.at) || 0, l.length)), 0, op.value); }
@@ -564,7 +632,7 @@ if (cmd === 'validate') {
     const d = (x) => (x.stage && ni >= 0 ? Math.abs(order.indexOf(x.stage) - ni) : 99);
     list = list.map((x, i) => ({ x, i })).sort((a, b) => d(a.x) - d(b.x) || a.i - b.i).map((y) => y.x);
   }
-  const count = (l) => THEMES.map((t) => [t, l.filter((x) => x.theme === t).reduce((m, x) => m + x.boxes.length, 0)]).filter((x) => x[1]);
+  const count = (l) => Q_THEMES.map((t) => [t, l.filter((x) => x.theme === t).reduce((m, x) => m + x.boxes.length, 0)]).filter((x) => x[1]);
   const left = { flow: flow.length, enrich: Object.fromEntries(count(enrich)) };
   const n = Number(arg('--limit')) || (process.argv.includes('--text') ? 3 : list.length);
   if (process.argv.includes('--text')) {
@@ -585,6 +653,23 @@ if (cmd === 'validate') {
   for (const r of sm.stages) console.log(`${r.n}. ${r.name} [${r.status}] wait ${r.wait} · work ${r.work} · lead ${r.lead} (${r.shareOfLead ?? 0} %) · ↩ ${r.reworkOut} ↻ ${r.iterations} · AI ${r.aiUses} · without work ${r.withoutWork}/${r.boxes}`);
   if (sm.upstream) console.log(`upstream (outside the lead time): ${sm.upstream.boxes} boxes, ${sm.upstream.lead} d`);
   console.log(`to confirm: ${sm.toConfirm.length} · without work ${sm.missing.work.length} · without wait ${sm.missing.wait.length}`);
+} else if (cmd === 'texts') {
+  // The texts of the map to translate: all of them, or with --lang <code> --missing the ones without a translation.
+  const { data } = load(file);
+  if (!data) process.exit(1);
+  const l = arg('--lang'), all = textsOf(data), have = ((data.i18n || {})[l]) || {};
+  const list = l && process.argv.includes('--missing') ? all.filter((t) => !(t in have)) : all;
+  console.log(JSON.stringify(Object.fromEntries(list.map((t) => [t, l ? have[t] || '' : ''])), null, 2));
+  if (l) console.error(`${list.length} text(s)${process.argv.includes('--missing') ? ' without a translation' : ''} for "${l}" (of ${all.length})`);
+} else if (cmd === 'designs') {
+  // One page per built-in theme, and an index to compare them side by side: the person picks, then {"set": "theme"}.
+  const out = arg('--output'); if (!out) { console.error('--output <dir> required'); process.exit(2); }
+  const { data, errors } = load(file);
+  if (errors.length) { console.error(`INVALID ${file}\n- ${errors.join('\n- ')}`); process.exit(1); }
+  mkdirSync(out, { recursive: true });
+  for (const t of THEMES) writeFileSync(join(out, `${t}.html`), embedIn(readFileSync(DEFAULT_PAGE, 'utf8'), { ...data, theme: t }));
+  writeFileSync(join(out, 'index.html'), designsIndex(THEMES.map((t) => [t, `${t}.html`])));
+  console.log(`DESIGNS ${resolve(out)} (${THEMES.join(', ')}; open index.html)`);
 } else if (cmd === 'page') {
   // The skill's default page (neutral design, every layout rule), with the map in it: one file to open or host anywhere.
   const out = arg('--output');
@@ -616,8 +701,10 @@ if (cmd === 'validate') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
       res.write('data: hello\n\n'); clients.add(res); req.on('close', () => clients.delete(res)); return;
     }
+    if (req.url === '/designs') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(designsIndex(THEMES.map((t) => [t, `/?theme=${t}`]))); return; }
     if (req.url === '/map.json') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(valid)); return; }
     if (req.url === '/' || req.url.startsWith('/?')) {
+      // ?theme=<name> previews a built-in theme (the page reads it); the map is unchanged.
       if (!valid) { res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(`INVALID ${file}\n- ${current.errors.join('\n- ')}`); return; }
       let html = embedIn(readFileSync(pg, 'utf8'), valid);
       html = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, () => `${RELOAD}\n</body>`) : html + RELOAD;
@@ -630,7 +717,7 @@ if (cmd === 'validate') {
     if (e.code === 'EADDRINUSE' && tryPort < port + 10) { tryPort += 1; server.listen(tryPort, '127.0.0.1'); }
     else { console.error(`SERVE FAILED: ${e.message}`); process.exit(1); }
   });
-  server.on('listening', () => console.log(`READY http://127.0.0.1:${tryPort}/  (map: ${file}, page: ${pg === DEFAULT_PAGE ? 'default' : pg})`));
+  server.on('listening', () => console.log(`READY http://127.0.0.1:${tryPort}/  (map: ${file}, page: ${pg === DEFAULT_PAGE ? 'default' : pg}; themes side by side: /designs)`));
   server.listen(tryPort, '127.0.0.1');
 } else if (cmd === 'embed') {
   // The page carries the map (vsm-data) and its figures (vsm-summary) in two fixed tags: the page reads them,

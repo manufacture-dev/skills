@@ -1,4 +1,8 @@
 {
+  "languages": [
+    "en",
+    "fr"
+  ],
   "case": {
     "client": "Lumen Insights (fictional)",
     "title": "Scheduled report exports: from customer request to production",

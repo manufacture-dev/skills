@@ -15,6 +15,7 @@
   --red:#b83226; --amber:#a86b0c; --green:#2d7a4f; --sel:#ffd34d;
   --mk-good:#2d7a4f; --mk-bad:#b83226; --mk-warn:#a86b0c; --mk-neutral:#5b616b;
   --radius:8px; --shadow:0 1px 2px rgba(0,0,0,.06);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; --font-head:var(--font); --font-num:var(--font);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -34,10 +35,26 @@
   --mk-good:#6cc993; --mk-bad:#f0796d; --mk-warn:#e3b04e; --mk-neutral:#a3aab4;
   --shadow:none;
 }
+
+/* Built-in themes (data-vsm-theme on the root, from the map's "theme"): tokens only, light and dark. "neutral" is the default above. */
+:root[data-vsm-theme="blueprint"]{--bg:#e3ecf7; --surface:#fbfdff; --surface-2:#dbe7f5; --ink:#0b2545; --muted:#3f5a7a; --line:#b4c9e3; --line-strong:#5f86b5; --wait:#d0661c; --wait-soft:#f9e1cd; --work:#0b5cad; --work-soft:#cfe0f5; --radius:3px; --shadow:none; --font-head:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --font-num:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+@media (prefers-color-scheme: dark){:root[data-vsm-theme="blueprint"]:not([data-theme="light"]){--bg:#081626; --surface:#0e2238; --surface-2:#13304f; --ink:#e3eefa; --muted:#9db6d2; --line:#21405f; --line-strong:#4d77a6; --wait:#f2a463; --wait-soft:#4a2f1d; --work:#6cb0f5; --work-soft:#123a62; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"][data-vsm-theme="blueprint"]{--bg:#081626; --surface:#0e2238; --surface-2:#13304f; --ink:#e3eefa; --muted:#9db6d2; --line:#21405f; --line-strong:#4d77a6; --wait:#f2a463; --wait-soft:#4a2f1d; --work:#6cb0f5; --work-soft:#123a62; --shadow:none; color-scheme:dark}
+:root[data-vsm-theme="graphite"]{--bg:#e6e6e6; --surface:#ffffff; --surface-2:#efefef; --ink:#000000; --muted:#4a4a4a; --line:#c8c8c8; --line-strong:#000000; --wait:#d35400; --wait-soft:#f6dcc8; --work:#000000; --work-soft:#d9d9d9; --ai:#5a3fb0; --radius:0; --shadow:none; --font-head:"Helvetica Neue",Helvetica,Arial,sans-serif;}
+@media (prefers-color-scheme: dark){:root[data-vsm-theme="graphite"]:not([data-theme="light"]){--bg:#0a0a0a; --surface:#151515; --surface-2:#1f1f1f; --ink:#ffffff; --muted:#a8a8a8; --line:#2e2e2e; --line-strong:#ffffff; --wait:#ff8a3d; --wait-soft:#40230f; --work:#ffffff; --work-soft:#383838; --ai:#b9a4f2; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"][data-vsm-theme="graphite"]{--bg:#0a0a0a; --surface:#151515; --surface-2:#1f1f1f; --ink:#ffffff; --muted:#a8a8a8; --line:#2e2e2e; --line-strong:#ffffff; --wait:#ff8a3d; --wait-soft:#40230f; --work:#ffffff; --work-soft:#383838; --ai:#b9a4f2; --shadow:none; color-scheme:dark}
+:root[data-vsm-theme="soft"]{--bg:#f1ecfa; --surface:#ffffff; --surface-2:#f4effc; --ink:#2a2342; --muted:#6d6690; --line:#e6def4; --line-strong:#b9aed6; --wait:#e8735a; --wait-soft:#fde3dc; --work:#4a7fe0; --work-soft:#e0eafc; --ai:#8a5cd6; --radius:18px; --shadow:0 4px 18px rgba(70,40,140,.10); --font:ui-rounded,"SF Pro Rounded","Nunito",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+@media (prefers-color-scheme: dark){:root[data-vsm-theme="soft"]:not([data-theme="light"]){--bg:#16121f; --surface:#211c2e; --surface-2:#2a2439; --ink:#efeaf9; --muted:#aea5c8; --line:#372f4b; --line-strong:#6f658f; --wait:#f29a83; --wait-soft:#47281f; --work:#86b2f3; --work-soft:#1f3354; --ai:#bf9cf3; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"][data-vsm-theme="soft"]{--bg:#16121f; --surface:#211c2e; --surface-2:#2a2439; --ink:#efeaf9; --muted:#aea5c8; --line:#372f4b; --line-strong:#6f658f; --wait:#f29a83; --wait-soft:#47281f; --work:#86b2f3; --work-soft:#1f3354; --ai:#bf9cf3; --shadow:none; color-scheme:dark}
+:root[data-vsm-theme="contrast"]{--bg:#ffffff; --surface:#ffffff; --surface-2:#f0f0f0; --ink:#000000; --muted:#333333; --line:#000000; --line-strong:#000000; --wait:#a34400; --wait-soft:#ffe0c2; --work:#0033a0; --work-soft:#d6e2ff; --rework:#9a0059; --ai:#4b0fa0; --red:#b00000; --amber:#7a4a00; --green:#006b2e; --sel:#ffdd00; --radius:0; --shadow:none;}
+@media (prefers-color-scheme: dark){:root[data-vsm-theme="contrast"]:not([data-theme="light"]){--bg:#000000; --surface:#000000; --surface-2:#1a1a1a; --ink:#ffffff; --muted:#e0e0e0; --line:#ffffff; --line-strong:#ffffff; --wait:#ffad5c; --wait-soft:#4d2600; --work:#7fb2ff; --work-soft:#00264d; --rework:#ff7ac3; --ai:#c9a8ff; --red:#ff6b6b; --amber:#ffcc4d; --green:#5ee08f; --sel:#ffdd00; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"][data-vsm-theme="contrast"]{--bg:#000000; --surface:#000000; --surface-2:#1a1a1a; --ink:#ffffff; --muted:#e0e0e0; --line:#ffffff; --line-strong:#ffffff; --wait:#ffad5c; --wait-soft:#4d2600; --work:#7fb2ff; --work-soft:#00264d; --rework:#ff7ac3; --ai:#c9a8ff; --red:#ff6b6b; --amber:#ffcc4d; --green:#5ee08f; --sel:#ffdd00; --shadow:none; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--font);overflow-x:hidden}
 main{max-width:1180px;margin:0 auto;padding:20px 16px 48px}
+h1,h2{font-family:var(--font-head)}
+.tot .v{font-family:var(--font-num)}
 h1{font-size:22px;line-height:1.25;margin:4px 0 8px}
 h2{font-size:16px;margin:0 0 10px}
 section{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:14px 0;box-shadow:var(--shadow);min-width:0}
@@ -51,6 +68,8 @@ a{color:var(--work)}
 .seg button{background:transparent;border:0;padding:5px 12px;cursor:pointer}
 .seg button+button{border-left:1px solid var(--line-strong)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.langpick{display:inline-flex;align-items:center;gap:6px}
+.langpick select{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;padding:4px 8px}
 .flowline{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:6px 0}
 .flowline b{font-weight:600}
 .team{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -176,6 +195,456 @@ ol.steps{margin:4px 0 12px;padding-left:20px} ol.steps li{margin:3px 0}
 <body>
 <script id="vsm-data" type="application/json">{}</script>
 <script id="vsm-summary" type="application/json">{}</script>
+<script id="vsm-ui" type="application/json">{
+ "en": {
+  "langLabel": "Language",
+  "trigger": "Trigger",
+  "end": "End",
+  "team": "Team",
+  "totalsTitle": "Totals",
+  "lead": "Lead time",
+  "work": "Work",
+  "wait": "Wait",
+  "fe": "Flow efficiency",
+  "rca": "Rolled %C&A",
+  "notMeasured": "not measured",
+  "caOver": {
+   "one": "over {n} box with a %C&A",
+   "other": "over {n} boxes with a %C&A"
+  },
+  "feSub": "work ÷ lead time",
+  "leadSub": "wait + work, working days",
+  "incomplete": "{n} incomplete stage(s) (a box without work time), {m} with no duration at all",
+  "upstreamNote": {
+   "one": "Upstream, outside these totals: {b} box, {l}.",
+   "other": "Upstream, outside these totals: {b} boxes, {l}."
+  },
+  "mapTitle": "The map",
+  "macro": "Macro",
+  "detailed": "Detailed",
+  "hint": "Read left to right. Select a box, or a line of the rework list, to draw its rework arrows; the flow scrolls sideways when it is wider than the screen.",
+  "who": "Who",
+  "tools": "Tools",
+  "workT": "Work",
+  "waitT": "Wait",
+  "ca": "%C&A",
+  "batch": "Batch",
+  "actors": "Actors",
+  "toConfirm": "to confirm",
+  "upstream": "upstream · outside totals",
+  "notDetailed": "not detailed yet",
+  "parallel": "parallel",
+  "felt": "felt",
+  "rolledCA": "rolled %C&A",
+  "ai": "AI",
+  "markers": "Markers",
+  "none": "none",
+  "reworkOut": "sends back",
+  "iterations": "iterates",
+  "boxesNoWork": {
+   "one": "{n} box without work time",
+   "other": "{n} boxes without work time"
+  },
+  "sigma": "Σ",
+  "leadShort": "lead",
+  "unknown": "?",
+  "source": "source",
+  "words": "words used",
+  "reworkTitle": "Rework",
+  "rwFrom": "From (sends back)",
+  "rwTo": "To (redoes)",
+  "rwLabel": "What comes back",
+  "rwCount": "How often",
+  "rwCost": "Cost",
+  "rwSource": "Source",
+  "rwShow": "Show",
+  "stagesTitle": "Per stage",
+  "thStage": "Stage",
+  "thWait": "Wait",
+  "thWork": "Work",
+  "thLead": "Lead time",
+  "thShare": "Share of lead",
+  "thEff": "Efficiency",
+  "thRework": "Rework ↩ / ↻",
+  "thAI": "AI uses",
+  "thNoWork": "Without work",
+  "thNoWait": "Without wait",
+  "thBar": "Wait · work",
+  "longest": "longest",
+  "upstreamRow": "Upstream (outside the lead time)",
+  "wholeStream": "Whole stream",
+  "loopsN": "{n} loops",
+  "tableNote": "Recorded durations only: a box without duration counts as 0; the figures move as missing times come in.",
+  "missingTitle": "What is still to complete",
+  "missWork": "Boxes without a work time",
+  "missWait": "Boxes without a wait time",
+  "missConfirm": "To confirm (items and loops)",
+  "missAssumed": "Stages still assumed",
+  "missAssumedSteps": "Sub-steps still assumed",
+  "nothing": "Nothing.",
+  "loopWord": "loop",
+  "aiWord": "AI use",
+  "markerWord": "marker",
+  "hypTitle": "Hypotheses",
+  "parkTitle": "Parking (ideas for the future flow)",
+  "hs": {
+   "open": "open",
+   "confirmed": "confirmed",
+   "refuted": "refuted",
+   "partial": "partial"
+  },
+  "ss": {
+   "confirmed": "confirmed",
+   "assumed": "to confirm"
+  },
+  "legendTitle": "Legend",
+  "logTitle": "Latest changes",
+  "contTitle": "Continue this map",
+  "cont1": "Install the value-stream-map skill in your coding agent (Claude Code, Codex or another one that reads skills): ",
+  "cont2": "Get this map’s data: copy it, or download it as JSON (or save this page as HTML and run the skill’s import).",
+  "cont3": "Ask the agent to continue it: save the data as a .json file (or paste it into the conversation and ask the agent to save it), then tell it what changed or what to add.",
+  "copy": "Copy the data",
+  "download": "Download (JSON)",
+  "copied": "Copied.",
+  "saved": "Saved.",
+  "copyManual": "Copy failed: the data is selected below, copy it by hand.",
+  "saveFailed": "Download failed.",
+  "selBox": "Selected box",
+  "selStage": "Selected stage",
+  "selLoop": "Selected loop",
+  "close": "Close",
+  "loopsHere": "Rework touching this box",
+  "noLoops": "No rework loop touches this box.",
+  "lv": {
+   "assistant": "assistant",
+   "tooled": "tooled",
+   "prepares": "prepares",
+   "chains": "chains"
+  },
+  "lvd": {
+   "assistant": "on-demand assistant",
+   "tooled": "AI built into the step",
+   "prepares": "agent prepares, human approves",
+   "chains": "agent chains steps, human supervises"
+  },
+  "mk": {
+   "accelerates": "accelerates",
+   "slows": "slows",
+   "bottleneck": "bottleneck",
+   "new-bottleneck": "new bottleneck",
+   "pain": "pain",
+   "new-pain": "new pain",
+   "duplicate": "duplicate",
+   "not-done": "not done"
+  },
+  "mkd": {
+   "accelerates": "speeds the flow up",
+   "slows": "slows the flow down",
+   "bottleneck": "where work piles up",
+   "new-bottleneck": "bottleneck created or worsened by AI",
+   "pain": "a pain point",
+   "new-pain": "a pain created by AI",
+   "duplicate": "work done twice",
+   "not-done": "step skipped on this case"
+  },
+  "lg": [
+   [
+    "▽ 2.0 d",
+    "Queue: how long the work waits before the next box starts (wait time, warm colour). “▽ ?” = wait unknown; a plain → = no wait to show."
+   ],
+   [
+    "Work",
+    "Work time of a box (cool colour), in working days (1 d = 8 h); under a day in hours. The words used are quoted."
+   ],
+   [
+    "%C&A",
+    "Percent complete and accurate: share of what a box receives that it can use as is. Red under 70, amber under 90."
+   ],
+   [
+    "Rolled %C&A",
+    "The product of the %C&A of the boxes that have one: the share that goes through the whole stream without coming back."
+   ],
+   [
+    "↩ n",
+    "The box sends work back to an earlier box n times (rework loops). Arrows run in lanes under the boxes."
+   ],
+   [
+    "↻ n",
+    "The box iterates on itself (rounds of the same work)."
+   ],
+   [
+    "Batch",
+    "Work moves in batches of this size (a sprint, a release train)."
+   ],
+   [
+    "Stacked boxes",
+    "Boxes stacked in one column run at the same time (parallel); the totals count the longest."
+   ],
+   [
+    "Dashed",
+    "To confirm: a stage or sub-step still assumed, or an item inferred rather than heard."
+   ],
+   [
+    "Dotted",
+    "Upstream: work before the case starts, kept out of the totals."
+   ],
+   [
+    "~",
+    "Estimate (approximate figure); a range shows as min–max, “≤” for a maximum only."
+   ],
+   [
+    "felt",
+    "A feeling, not a measure."
+   ],
+   [
+    "?",
+    "Unknown: not recorded yet."
+   ],
+   [
+    "Timeline",
+    "Under each stage, a bar of its wait then its work, all stages on one scale (22 px per working day)."
+   ],
+   [
+    "Lead time",
+    "Wait + work, from the trigger to the end of the case."
+   ],
+   [
+    "Flow efficiency",
+    "Work ÷ lead time."
+   ],
+   [
+    "Σ",
+    "A stage’s times are the sum of its boxes (a parallel group counts once, for its longest)."
+   ]
+  ],
+  "dayUnit": "d",
+  "langName": "English"
+ },
+ "fr": {
+  "langLabel": "Langue",
+  "trigger": "Déclencheur",
+  "end": "Fin",
+  "team": "Équipe",
+  "totalsTitle": "Totaux",
+  "lead": "Délai total",
+  "work": "Travail",
+  "wait": "Attente",
+  "fe": "Efficacité du flux",
+  "rca": "%C&A cumulé",
+  "notMeasured": "non mesuré",
+  "caOver": {
+   "one": "sur {n} boîte avec un %C&A",
+   "other": "sur {n} boîtes avec un %C&A"
+  },
+  "feSub": "travail ÷ délai total",
+  "leadSub": "attente + travail, jours ouvrés",
+  "incomplete": "{n} étape(s) incomplète(s) (une boîte sans temps de travail), {m} sans aucune durée",
+  "upstreamNote": {
+   "one": "En amont, hors de ces totaux : {b} boîte, {l}.",
+   "other": "En amont, hors de ces totaux : {b} boîtes, {l}."
+  },
+  "mapTitle": "La carte",
+  "macro": "Macro",
+  "detailed": "Détaillée",
+  "hint": "Se lit de gauche à droite. Sélectionnez une boîte, ou une ligne de la liste des reprises, pour tracer ses flèches de reprise ; le flux défile latéralement s’il est plus large que l’écran.",
+  "who": "Qui",
+  "tools": "Outils",
+  "workT": "Travail",
+  "waitT": "Attente",
+  "ca": "%C&A",
+  "batch": "Lot",
+  "actors": "Acteurs",
+  "toConfirm": "à confirmer",
+  "upstream": "amont · hors totaux",
+  "notDetailed": "pas encore détaillée",
+  "parallel": "en parallèle",
+  "felt": "ressenti",
+  "rolledCA": "%C&A cumulé",
+  "ai": "IA",
+  "markers": "Marqueurs",
+  "none": "aucun",
+  "reworkOut": "renvoie",
+  "iterations": "itère",
+  "boxesNoWork": {
+   "one": "{n} boîte sans temps de travail",
+   "other": "{n} boîtes sans temps de travail"
+  },
+  "sigma": "Σ",
+  "leadShort": "délai",
+  "unknown": "?",
+  "source": "source",
+  "words": "mots employés",
+  "reworkTitle": "Reprises",
+  "rwFrom": "De (renvoie)",
+  "rwTo": "Vers (refait)",
+  "rwLabel": "Ce qui revient",
+  "rwCount": "Fréquence",
+  "rwCost": "Coût",
+  "rwSource": "Source",
+  "rwShow": "Afficher",
+  "stagesTitle": "Par étape",
+  "thStage": "Étape",
+  "thWait": "Attente",
+  "thWork": "Travail",
+  "thLead": "Délai",
+  "thShare": "Part du délai",
+  "thEff": "Efficacité",
+  "thRework": "Reprises ↩ / ↻",
+  "thAI": "Usages IA",
+  "thNoWork": "Sans travail",
+  "thNoWait": "Sans attente",
+  "thBar": "Attente · travail",
+  "longest": "la plus longue",
+  "upstreamRow": "Amont (hors délai total)",
+  "wholeStream": "Tout le flux",
+  "loopsN": "{n} boucles",
+  "tableNote": "Durées enregistrées seulement : une boîte sans durée compte pour 0 ; les chiffres bougent à mesure que les temps manquants arrivent.",
+  "missingTitle": "Ce qui reste à compléter",
+  "missWork": "Boîtes sans temps de travail",
+  "missWait": "Boîtes sans temps d’attente",
+  "missConfirm": "À confirmer (éléments et boucles)",
+  "missAssumed": "Étapes encore supposées",
+  "missAssumedSteps": "Sous-étapes encore supposées",
+  "nothing": "Rien.",
+  "loopWord": "boucle",
+  "aiWord": "usage IA",
+  "markerWord": "marqueur",
+  "hypTitle": "Hypothèses",
+  "parkTitle": "Parking (idées pour le flux futur)",
+  "hs": {
+   "open": "ouverte",
+   "confirmed": "confirmée",
+   "refuted": "réfutée",
+   "partial": "partielle"
+  },
+  "ss": {
+   "confirmed": "confirmée",
+   "assumed": "à confirmer"
+  },
+  "legendTitle": "Légende",
+  "logTitle": "Dernières modifications",
+  "contTitle": "Continuer cette carte",
+  "cont1": "Installez le skill value-stream-map dans votre agent de code (Claude Code, Codex ou un autre agent qui lit les skills) : ",
+  "cont2": "Récupérez les données de cette carte : copiez-les, ou téléchargez-les en JSON (ou enregistrez cette page en HTML et lancez l’import du skill).",
+  "cont3": "Demandez à l’agent de la continuer : enregistrez les données dans un fichier .json (ou collez-les dans la conversation en lui demandant de l’enregistrer), puis dites-lui ce qui a changé ou ce qu’il faut ajouter.",
+  "copy": "Copier les données",
+  "download": "Télécharger (JSON)",
+  "copied": "Copié.",
+  "saved": "Enregistré.",
+  "copyManual": "La copie a échoué : les données sont sélectionnées ci-dessous, copiez-les à la main.",
+  "saveFailed": "Le téléchargement a échoué.",
+  "selBox": "Boîte sélectionnée",
+  "selStage": "Étape sélectionnée",
+  "selLoop": "Boucle sélectionnée",
+  "close": "Fermer",
+  "loopsHere": "Reprises qui touchent cette boîte",
+  "noLoops": "Aucune boucle de reprise ne touche cette boîte.",
+  "lv": {
+   "assistant": "assistant",
+   "tooled": "outillé",
+   "prepares": "prépare",
+   "chains": "enchaîne"
+  },
+  "lvd": {
+   "assistant": "assistant à la demande",
+   "tooled": "IA intégrée à l’étape",
+   "prepares": "l’agent prépare, l’humain valide",
+   "chains": "l’agent enchaîne les étapes, l’humain supervise"
+  },
+  "mk": {
+   "accelerates": "accélère",
+   "slows": "ralentit",
+   "bottleneck": "goulot",
+   "new-bottleneck": "nouveau goulot",
+   "pain": "irritant",
+   "new-pain": "nouvel irritant",
+   "duplicate": "doublon",
+   "not-done": "non fait"
+  },
+  "mkd": {
+   "accelerates": "accélère le flux",
+   "slows": "ralentit le flux",
+   "bottleneck": "là où le travail s’accumule",
+   "new-bottleneck": "goulot créé ou aggravé par l’IA",
+   "pain": "un point douloureux",
+   "new-pain": "un irritant créé par l’IA",
+   "duplicate": "travail fait deux fois",
+   "not-done": "étape sautée sur ce cas"
+  },
+  "lg": [
+   [
+    "▽ 2,0 j",
+    "File d’attente : combien de temps le travail attend avant que la boîte suivante démarre (attente, couleur chaude). « ▽ ? » = attente inconnue ; une simple → = pas d’attente à montrer."
+   ],
+   [
+    "Travail",
+    "Temps de travail d’une boîte (couleur froide), en jours ouvrés (1 j = 8 h) ; moins d’un jour en heures. Les mots employés sont cités."
+   ],
+   [
+    "%C&A",
+    "Pourcentage complet et exact : part de ce qu’une boîte reçoit qu’elle peut utiliser tel quel. Rouge sous 70, ambre sous 90."
+   ],
+   [
+    "%C&A cumulé",
+    "Le produit des %C&A des boîtes qui en ont un : la part qui traverse tout le flux sans revenir."
+   ],
+   [
+    "↩ n",
+    "La boîte renvoie du travail à une boîte antérieure n fois (boucles de reprise). Les flèches passent dans des couloirs sous les boîtes."
+   ],
+   [
+    "↻ n",
+    "La boîte itère sur elle-même (plusieurs tours du même travail)."
+   ],
+   [
+    "Lot",
+    "Le travail avance par lots de cette taille (un sprint, un train de mise en production)."
+   ],
+   [
+    "Boîtes empilées",
+    "Les boîtes empilées dans une colonne se déroulent en même temps (en parallèle) ; les totaux comptent la plus longue."
+   ],
+   [
+    "Tirets",
+    "À confirmer : une étape ou sous-étape encore supposée, ou un élément déduit plutôt qu’entendu."
+   ],
+   [
+    "Pointillés",
+    "Amont : travail avant le début du cas, tenu hors des totaux."
+   ],
+   [
+    "~",
+    "Estimation (chiffre approximatif) ; une fourchette s’affiche min–max, « ≤ » pour un maximum seul."
+   ],
+   [
+    "ressenti",
+    "Un ressenti, pas une mesure."
+   ],
+   [
+    "?",
+    "Inconnu : pas encore enregistré."
+   ],
+   [
+    "Frise",
+    "Sous chaque étape, une barre de son attente puis de son travail, toutes les étapes à la même échelle (22 px par jour ouvré)."
+   ],
+   [
+    "Délai total",
+    "Attente + travail, du déclencheur à la fin du cas."
+   ],
+   [
+    "Efficacité du flux",
+    "Travail ÷ délai total."
+   ],
+   [
+    "Σ",
+    "Les temps d’une étape sont la somme de ses boîtes (un groupe parallèle compte une fois, pour le plus long)."
+   ]
+  ],
+  "dayUnit": "j",
+  "langName": "Français"
+ }
+}</script>
 <main>
   <header class="section-head" id="hdr"></header>
   <section aria-labelledby="h-tot"><h2 id="h-tot" data-t="totalsTitle"></h2><div class="totals" id="totals"></div><div class="note" id="totNote"></div></section>
@@ -218,138 +687,55 @@ const $ = (s, r = document) => r.querySelector(s);
 const D = JSON.parse($('#vsm-data').textContent || '{}');
 const S = JSON.parse($('#vsm-summary').textContent || '{}');
 if (D.case && D.case.title) document.title = D.case.title;
+// Theme: ?theme=<name> (previews), else the map's "theme", else neutral. "themeTokens" {light, dark} overrides any
+// token (an organisation's colours, font, radius) on top of the theme.
+const THEMES = ['neutral', 'blueprint', 'graphite', 'soft', 'contrast'];
+{
+  let th = D.theme; try { const q = new URLSearchParams(location.search).get('theme'); if (q) th = q; } catch (e) {}
+  if (THEMES.includes(th) && th !== 'neutral') document.documentElement.dataset.vsmTheme = th;
+  const tt = D.themeTokens || {}, decl = (o) => Object.entries(o || {}).filter(([k]) => /^--[\w-]+$/.test(k)).map(([k, v]) => `${k}:${String(v).replace(/[;{}<]/g, '')}`).join(';');
+  if (tt.light || tt.dark) {
+    const st = document.createElement('style');
+    st.textContent = `:root:root:root{${decl(tt.light)}}@media (prefers-color-scheme: dark){:root:root:root:not([data-theme="light"]){${decl(tt.dark)}}}:root:root:root[data-theme="dark"]{${decl(tt.dark)}}`;
+    document.head.appendChild(st);
+  }
+}
 const PX = 22; // pixels per working day, shared by the timeline and the per-stage table
 const LEVELS = ['assistant', 'tooled', 'prepares', 'chains'];
 const KINDS = ['accelerates', 'slows', 'bottleneck', 'new-bottleneck', 'pain', 'new-pain', 'duplicate', 'not-done'];
 
-const UI = {
-  en: {
-    langLabel: 'Language', trigger: 'Trigger', end: 'End', team: 'Team',
-    totalsTitle: 'Totals', lead: 'Lead time', work: 'Work', wait: 'Wait', fe: 'Flow efficiency', rca: 'Rolled %C&A',
-    notMeasured: 'not measured', caOver: (n) => `over ${n} box${n === 1 ? '' : 'es'} with a %C&A`,
-    feSub: 'work ÷ lead time', leadSub: 'wait + work, working days',
-    incomplete: (n, m) => `${n} incomplete stage(s) (a box without work time), ${m} with no duration at all`,
-    upstreamNote: (b, l) => `Upstream, outside these totals: ${b} box${b === 1 ? '' : 'es'}, ${l}.`,
-    mapTitle: 'The map', macro: 'Macro', detailed: 'Detailed',
-    hint: 'Read left to right. Select a box, or a line of the rework list, to draw its rework arrows; the flow scrolls sideways when it is wider than the screen.',
-    who: 'Who', tools: 'Tools', workT: 'Work', waitT: 'Wait', ca: '%C&A', batch: 'Batch', actors: 'Actors',
-    toConfirm: 'to confirm', upstream: 'upstream · outside totals', notDetailed: 'not detailed yet', parallel: 'parallel',
-    felt: 'felt', rolledCA: 'rolled %C&A', ai: 'AI', markers: 'Markers', none: 'none', reworkOut: 'sends back', iterations: 'iterates',
-    boxesNoWork: (n) => `${n} box${n === 1 ? '' : 'es'} without work time`,
-    sigma: 'Σ', leadShort: 'lead', unknown: '?', source: 'source', words: 'words used',
-    reworkTitle: 'Rework', rwFrom: 'From (sends back)', rwTo: 'To (redoes)', rwLabel: 'What comes back', rwCount: 'How often', rwCost: 'Cost', rwSource: 'Source', rwShow: 'Show',
-    stagesTitle: 'Per stage', thStage: 'Stage', thWait: 'Wait', thWork: 'Work', thLead: 'Lead time', thShare: 'Share of lead', thEff: 'Efficiency', thRework: 'Rework ↩ / ↻', thAI: 'AI uses', thNoWork: 'Without work', thNoWait: 'Without wait', thBar: 'Wait · work',
-    longest: 'longest', upstreamRow: 'Upstream (outside the lead time)', wholeStream: 'Whole stream', loopsN: (n) => `${n} loops`,
-    tableNote: 'Recorded durations only: a box without duration counts as 0; the figures move as missing times come in.',
-    missingTitle: 'What is still to complete', missWork: 'Boxes without a work time', missWait: 'Boxes without a wait time',
-    missConfirm: 'To confirm (items and loops)', missAssumed: 'Stages still assumed', missAssumedSteps: 'Sub-steps still assumed', nothing: 'Nothing.',
-    loopWord: 'loop', aiWord: 'AI use', markerWord: 'marker',
-    hypTitle: 'Hypotheses', parkTitle: 'Parking (ideas for the future flow)',
-    hs: { open: 'open', confirmed: 'confirmed', refuted: 'refuted', partial: 'partial' },
-    ss: { confirmed: 'confirmed', assumed: 'to confirm' },
-    legendTitle: 'Legend', logTitle: 'Latest changes',
-    contTitle: 'Continue this map',
-    cont1: 'Install the value-stream-map skill in your coding agent (Claude Code, Codex or another one that reads skills): ',
-    cont2: 'Get this map’s data: copy it, or download it as JSON (or save this page as HTML and run the skill’s import).',
-    cont3: 'Ask the agent to continue it: save the data as a .json file (or paste it into the conversation and ask the agent to save it), then tell it what changed or what to add.',
-    copy: 'Copy the data', download: 'Download (JSON)', copied: 'Copied.', saved: 'Saved.', copyManual: 'Copy failed: the data is selected below, copy it by hand.', saveFailed: 'Download failed.',
-    selBox: 'Selected box', selStage: 'Selected stage', selLoop: 'Selected loop', close: 'Close',
-    loopsHere: 'Rework touching this box', noLoops: 'No rework loop touches this box.',
-    lv: { assistant: 'assistant', tooled: 'tooled', prepares: 'prepares', chains: 'chains' },
-    lvd: { assistant: 'on-demand assistant', tooled: 'AI built into the step', prepares: 'agent prepares, human approves', chains: 'agent chains steps, human supervises' },
-    mk: { accelerates: 'accelerates', slows: 'slows', bottleneck: 'bottleneck', 'new-bottleneck': 'new bottleneck', pain: 'pain', 'new-pain': 'new pain', duplicate: 'duplicate', 'not-done': 'not done' },
-    mkd: { accelerates: 'speeds the flow up', slows: 'slows the flow down', bottleneck: 'where work piles up', 'new-bottleneck': 'bottleneck created or worsened by AI', pain: 'a pain point', 'new-pain': 'a pain created by AI', duplicate: 'work done twice', 'not-done': 'step skipped on this case' },
-    lg: [
-      ['▽ 2.0 d', 'Queue: how long the work waits before the next box starts (wait time, warm colour). “▽ ?” = wait unknown; a plain → = no wait to show.'],
-      ['Work', 'Work time of a box (cool colour), in working days (1 d = 8 h); under a day in hours. The words used are quoted.'],
-      ['%C&A', 'Percent complete and accurate: share of what a box receives that it can use as is. Red under 70, amber under 90.'],
-      ['Rolled %C&A', 'The product of the %C&A of the boxes that have one: the share that goes through the whole stream without coming back.'],
-      ['↩ n', 'The box sends work back to an earlier box n times (rework loops). Arrows run in lanes under the boxes.'],
-      ['↻ n', 'The box iterates on itself (rounds of the same work).'],
-      ['Batch', 'Work moves in batches of this size (a sprint, a release train).'],
-      ['Stacked boxes', 'Boxes stacked in one column run at the same time (parallel); the totals count the longest.'],
-      ['Dashed', 'To confirm: a stage or sub-step still assumed, or an item inferred rather than heard.'],
-      ['Dotted', 'Upstream: work before the case starts, kept out of the totals.'],
-      ['~', 'Estimate (approximate figure); a range shows as min–max, “≤” for a maximum only.'],
-      ['felt', 'A feeling, not a measure.'],
-      ['?', 'Unknown: not recorded yet.'],
-      ['Timeline', 'Under each stage, a bar of its wait then its work, all stages on one scale (22 px per working day).'],
-      ['Lead time', 'Wait + work, from the trigger to the end of the case.'],
-      ['Flow efficiency', 'Work ÷ lead time.'],
-      ['Σ', 'A stage’s times are the sum of its boxes (a parallel group counts once, for its longest).'],
-    ],
-  },
-  fr: {
-    langLabel: 'Langue', trigger: 'Déclencheur', end: 'Fin', team: 'Équipe',
-    totalsTitle: 'Totaux', lead: 'Délai total', work: 'Travail', wait: 'Attente', fe: 'Efficacité du flux', rca: '%C&A cumulé',
-    notMeasured: 'non mesuré', caOver: (n) => `sur ${n} boîte${n === 1 ? '' : 's'} avec un %C&A`,
-    feSub: 'travail ÷ délai total', leadSub: 'attente + travail, jours ouvrés',
-    incomplete: (n, m) => `${n} étape(s) incomplète(s) (une boîte sans temps de travail), ${m} sans aucune durée`,
-    upstreamNote: (b, l) => `En amont, hors de ces totaux : ${b} boîte${b === 1 ? '' : 's'}, ${l}.`,
-    mapTitle: 'La carte', macro: 'Macro', detailed: 'Détaillée',
-    hint: 'Se lit de gauche à droite. Sélectionnez une boîte, ou une ligne de la liste des reprises, pour tracer ses flèches de reprise ; le flux défile latéralement s’il est plus large que l’écran.',
-    who: 'Qui', tools: 'Outils', workT: 'Travail', waitT: 'Attente', ca: '%C&A', batch: 'Lot', actors: 'Acteurs',
-    toConfirm: 'à confirmer', upstream: 'amont · hors totaux', notDetailed: 'pas encore détaillée', parallel: 'en parallèle',
-    felt: 'ressenti', rolledCA: '%C&A cumulé', ai: 'IA', markers: 'Marqueurs', none: 'aucun', reworkOut: 'renvoie', iterations: 'itère',
-    boxesNoWork: (n) => `${n} boîte${n === 1 ? '' : 's'} sans temps de travail`,
-    sigma: 'Σ', leadShort: 'délai', unknown: '?', source: 'source', words: 'mots employés',
-    reworkTitle: 'Reprises', rwFrom: 'De (renvoie)', rwTo: 'Vers (refait)', rwLabel: 'Ce qui revient', rwCount: 'Fréquence', rwCost: 'Coût', rwSource: 'Source', rwShow: 'Afficher',
-    stagesTitle: 'Par étape', thStage: 'Étape', thWait: 'Attente', thWork: 'Travail', thLead: 'Délai', thShare: 'Part du délai', thEff: 'Efficacité', thRework: 'Reprises ↩ / ↻', thAI: 'Usages IA', thNoWork: 'Sans travail', thNoWait: 'Sans attente', thBar: 'Attente · travail',
-    longest: 'la plus longue', upstreamRow: 'Amont (hors délai total)', wholeStream: 'Tout le flux', loopsN: (n) => `${n} boucles`,
-    tableNote: 'Durées enregistrées seulement : une boîte sans durée compte pour 0 ; les chiffres bougent à mesure que les temps manquants arrivent.',
-    missingTitle: 'Ce qui reste à compléter', missWork: 'Boîtes sans temps de travail', missWait: 'Boîtes sans temps d’attente',
-    missConfirm: 'À confirmer (éléments et boucles)', missAssumed: 'Étapes encore supposées', missAssumedSteps: 'Sous-étapes encore supposées', nothing: 'Rien.',
-    loopWord: 'boucle', aiWord: 'usage IA', markerWord: 'marqueur',
-    hypTitle: 'Hypothèses', parkTitle: 'Parking (idées pour le flux futur)',
-    hs: { open: 'ouverte', confirmed: 'confirmée', refuted: 'réfutée', partial: 'partielle' },
-    ss: { confirmed: 'confirmée', assumed: 'à confirmer' },
-    legendTitle: 'Légende', logTitle: 'Dernières modifications',
-    contTitle: 'Continuer cette carte',
-    cont1: 'Installez le skill value-stream-map dans votre agent de code (Claude Code, Codex ou un autre agent qui lit les skills) : ',
-    cont2: 'Récupérez les données de cette carte : copiez-les, ou téléchargez-les en JSON (ou enregistrez cette page en HTML et lancez l’import du skill).',
-    cont3: 'Demandez à l’agent de la continuer : enregistrez les données dans un fichier .json (ou collez-les dans la conversation en lui demandant de l’enregistrer), puis dites-lui ce qui a changé ou ce qu’il faut ajouter.',
-    copy: 'Copier les données', download: 'Télécharger (JSON)', copied: 'Copié.', saved: 'Enregistré.', copyManual: 'La copie a échoué : les données sont sélectionnées ci-dessous, copiez-les à la main.', saveFailed: 'Le téléchargement a échoué.',
-    selBox: 'Boîte sélectionnée', selStage: 'Étape sélectionnée', selLoop: 'Boucle sélectionnée', close: 'Fermer',
-    loopsHere: 'Reprises qui touchent cette boîte', noLoops: 'Aucune boucle de reprise ne touche cette boîte.',
-    lv: { assistant: 'assistant', tooled: 'outillé', prepares: 'prépare', chains: 'enchaîne' },
-    lvd: { assistant: 'assistant à la demande', tooled: 'IA intégrée à l’étape', prepares: 'l’agent prépare, l’humain valide', chains: 'l’agent enchaîne les étapes, l’humain supervise' },
-    mk: { accelerates: 'accélère', slows: 'ralentit', bottleneck: 'goulot', 'new-bottleneck': 'nouveau goulot', pain: 'irritant', 'new-pain': 'nouvel irritant', duplicate: 'doublon', 'not-done': 'non fait' },
-    mkd: { accelerates: 'accélère le flux', slows: 'ralentit le flux', bottleneck: 'là où le travail s’accumule', 'new-bottleneck': 'goulot créé ou aggravé par l’IA', pain: 'un point douloureux', 'new-pain': 'un irritant créé par l’IA', duplicate: 'travail fait deux fois', 'not-done': 'étape sautée sur ce cas' },
-    lg: [
-      ['▽ 2,0 j', 'File d’attente : combien de temps le travail attend avant que la boîte suivante démarre (attente, couleur chaude). « ▽ ? » = attente inconnue ; une simple → = pas d’attente à montrer.'],
-      ['Travail', 'Temps de travail d’une boîte (couleur froide), en jours ouvrés (1 j = 8 h) ; moins d’un jour en heures. Les mots employés sont cités.'],
-      ['%C&A', 'Pourcentage complet et exact : part de ce qu’une boîte reçoit qu’elle peut utiliser tel quel. Rouge sous 70, ambre sous 90.'],
-      ['%C&A cumulé', 'Le produit des %C&A des boîtes qui en ont un : la part qui traverse tout le flux sans revenir.'],
-      ['↩ n', 'La boîte renvoie du travail à une boîte antérieure n fois (boucles de reprise). Les flèches passent dans des couloirs sous les boîtes.'],
-      ['↻ n', 'La boîte itère sur elle-même (plusieurs tours du même travail).'],
-      ['Lot', 'Le travail avance par lots de cette taille (un sprint, un train de mise en production).'],
-      ['Boîtes empilées', 'Les boîtes empilées dans une colonne se déroulent en même temps (en parallèle) ; les totaux comptent la plus longue.'],
-      ['Tirets', 'À confirmer : une étape ou sous-étape encore supposée, ou un élément déduit plutôt qu’entendu.'],
-      ['Pointillés', 'Amont : travail avant le début du cas, tenu hors des totaux.'],
-      ['~', 'Estimation (chiffre approximatif) ; une fourchette s’affiche min–max, « ≤ » pour un maximum seul.'],
-      ['ressenti', 'Un ressenti, pas une mesure.'],
-      ['?', 'Inconnu : pas encore enregistré.'],
-      ['Frise', 'Sous chaque étape, une barre de son attente puis de son travail, toutes les étapes à la même échelle (22 px par jour ouvré).'],
-      ['Délai total', 'Attente + travail, du déclencheur à la fin du cas.'],
-      ['Efficacité du flux', 'Travail ÷ délai total.'],
-      ['Σ', 'Les temps d’une étape sont la somme de ses boîtes (un groupe parallèle compte une fois, pour le plus long).'],
-    ],
-  },
+// Page labels: the JSON block "vsm-ui" (English and French built in). A map adds or overrides any language in its
+// "ui" field (same keys); a missing key falls back to English. A label with {n}, {m}, {b} or {l} is a template;
+// {"one", "other"} picks by the first number.
+const UI = JSON.parse(document.getElementById('vsm-ui').textContent);
+const FN = { caOver: ['n'], incomplete: ['n', 'm'], upstreamNote: ['b', 'l'], boxesNoWork: ['n'], loopsN: ['n'] };
+const merge = (a, b) => { const o = { ...a }; for (const [k, v] of Object.entries(b || {})) o[k] = v && typeof v === 'object' && !Array.isArray(v) && a[k] && typeof a[k] === 'object' && !Array.isArray(a[k]) && !('one' in v) ? merge(a[k], v) : v; return o; };
+const labelsFor = (l) => {
+  const d = merge(merge(UI.en, UI[l]), (D.ui || {})[l]);
+  for (const [k, names] of Object.entries(FN)) {
+    const t = d[k];
+    d[k] = (...args) => { const tpl = t && typeof t === 'object' ? (args[0] === 1 ? t.one : t.other) : String(t || ''); return tpl.replace(/\{(\w)\}/g, (m, x) => (names.includes(x) ? args[names.indexOf(x)] : m)); };
+  }
+  return d;
 };
 
-let lang = 'en', view = 'macro', sel = null;
-try { const l = localStorage.getItem('vsm-lang'); if (l === 'fr' || l === 'en') lang = l; } catch (e) {}
+// Languages: map.languages, the first being the one the map is written in (default ["en"]); i18n.<lang> translates
+// whole texts into the others. Older maps with only i18n.fr read as ["en", "fr"].
+const LANGS = Array.isArray(D.languages) && D.languages.length ? D.languages : ['en', ...Object.keys(D.i18n || {})];
+const SRC = LANGS[0];
+let lang = SRC, view = 'macro', sel = null;
+try { const l = localStorage.getItem('vsm-lang'); if (LANGS.includes(l)) lang = l; } catch (e) {}
 try { const v = localStorage.getItem('vsm-view'); if (v === 'macro' || v === 'detailed') view = v; } catch (e) {}
-const hasFr = !!(D.i18n && D.i18n.fr);
-if (!hasFr) lang = 'en';
-const T = () => UI[lang];
-const tr = (s) => (s == null ? s : (lang === 'fr' && hasFr && D.i18n.fr[s]) || s);
+const LBL = {};
+const T = () => (LBL[lang] = LBL[lang] || labelsFor(lang));
+const tr = (s) => (s == null || lang === SRC ? s : ((D.i18n || {})[lang] || {})[s] || s);
+const langName = (l) => { const n = merge(merge(UI.en, UI[l]), (D.ui || {})[l]).langName; if (n && (UI[l] || (D.ui || {})[l])) return n; try { return new Intl.DisplayNames([l], { type: 'language' }).of(l); } catch (e) { return l.toUpperCase(); } };
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const E = (s) => esc(tr(s));
 
 // numbers: days with one decimal, under a day in hours (1 d = 8 h)
-const dec = (v, n) => { const s = v.toFixed(n); return lang === 'fr' ? s.replace('.', ',') : s; };
-const unitD = () => (lang === 'fr' ? 'j' : 'd');
+const dec = (v, n) => { try { return new Intl.NumberFormat(lang, { minimumFractionDigits: n, maximumFractionDigits: n, useGrouping: false }).format(v); } catch (e) { return v.toFixed(n); } };
+const unitD = () => T().dayUnit;
 function fmtDays(v) {
   if (v == null) return '?';
   if (v > 0 && v < 1) { const h = Math.round(v * 8 * 10) / 10; return `${dec(h, Number.isInteger(h) ? 0 : 1)} h`; }
@@ -386,11 +772,14 @@ function renderHeader() {
         <div class="client">${esc(c.client)}</div>
         <h1>${E(c.title)}</h1>
       </div>
-      ${hasFr ? `<div class="seg" role="group" aria-label="${T().langLabel}"><button type="button" data-lang="en" aria-pressed="${lang === 'en'}">EN</button><button type="button" data-lang="fr" aria-pressed="${lang === 'fr'}">FR</button></div>` : ''}
+      ${LANGS.length === 2 ? `<div class="seg" role="group" aria-label="${T().langLabel}">${LANGS.map((l) => `<button type="button" data-lang="${esc(l)}" aria-pressed="${lang === l}" title="${esc(langName(l))}">${esc(l.toUpperCase())}</button>`).join('')}</div>`
+        : LANGS.length > 2 ? `<label class="langpick"><span class="muted small">${T().langLabel}</span> <select id="langSel">${LANGS.map((l) => `<option value="${esc(l)}"${lang === l ? ' selected' : ''}>${esc(langName(l))}</option>`).join('')}</select></label>` : ''}
     </div>
     <div class="flowline"><span class="muted">${T().trigger}</span> <b>${E(c.trigger)}</b> <span aria-hidden="true">→</span> <span class="muted">${T().end}</span> <b>${E(c.end)}</b></div>
     <div class="team"><span class="muted small" style="margin-right:4px">${T().team}</span>${(c.team || []).map((m) => `<span class="chip">${E(m)}</span>`).join('')}</div>`;
-  document.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => { lang = b.dataset.lang; try { localStorage.setItem('vsm-lang', lang); } catch (e) {} renderAll(); }));
+  const setLang = (l) => { lang = l; try { localStorage.setItem('vsm-lang', lang); } catch (e) {} renderAll(); };
+  document.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  const ls = $('#langSel'); if (ls) ls.addEventListener('change', () => setLang(ls.value));
 }
 function renderTotals() {
   const t = S.totals || {}, u = T();

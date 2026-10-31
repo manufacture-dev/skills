@@ -25,7 +25,10 @@ node scripts/vsm.mjs summary  <map.json> [--text]             # the figures a pa
 node scripts/vsm.mjs embed    <map.json> --page <page.html>   # put the map and its figures into the page
 node scripts/vsm.mjs import   <page.html> --output <map.json> # take the map back out of a page
 node scripts/vsm.mjs page     <map.json> --output <page.html> # the default page with the map in it: one file to open or host
-node scripts/vsm.mjs serve    <map.json> [--page <page.html>] [--port 4173]  # local site, reloads on every change
+node scripts/vsm.mjs serve    <map.json> [--page <page.html>] [--port 4173]  # local site, reloads on every change; /designs
+node scripts/vsm.mjs designs  <map.json> --output <dir>        # the map in each built-in theme, side by side
+node scripts/vsm.mjs texts    <map.json> --lang <code> --missing # map texts still to translate
+node scripts/vsm.mjs labels   [<map.json>] --lang <code> [--missing] # page labels to translate
 ```
 
 ## Starting point
@@ -41,7 +44,8 @@ You can run the session yourself, as the facilitator would: you ask, you record,
 
 **Two passes: the stream first, the detail after.** A map is worth what its steps are worth: the first goal is the whole stream, with as many steps as possible, from start to end. Detail (times, %C&A, AI, tools) comes in a second pass, theme by theme, over the whole map or one stage. Asking for every detail as each step comes up slows the flow of what people tell you and gets stuck on the first stage.
 
-1. **Frame the case**, one question at a time: the use case (one real, recent piece of work that reached production, not the process in general), what starts the work (trigger), when value is delivered (end), who takes part, then the stages: propose the ones given, or the starter stages, and ask what to rename, add, merge, remove or reorder. Then create the map already framed: `new <map.json> --title "<the case>" --trigger "…" --end "…" --team "…" --stages "…"`. Last framing question, optional: the look of the page, the default one or their organisation's design system (a link, a tokens or CSS file, a site to match); it can change any time, at publication included. Start `serve` and give the address, so the map shows up as it grows.
+0. **Languages first:** ask which language the map is written in and which others the page should offer (default: English only). The first is the map's own language; every text is written in it. `new … --languages "fr,en"`.
+1. **Frame the case**, one question at a time: the use case (one real, recent piece of work that reached production, not the process in general), what starts the work (trigger), when value is delivered (end), who takes part, then the stages: propose the ones given, or the starter stages, and ask what to rename, add, merge, remove or reorder. Then create the map already framed: `new <map.json> --title "<the case>" --trigger "…" --end "…" --team "…" --stages "…" --languages "…"`. Last framing question, optional: the look of the page (see **The page**): one of the built-in themes, shown side by side, or their organisation's colours or design system; it can change any time, at publication included. Start `serve` and give the address, so the map shows up as it grows.
 2. **Build the stream** (pass `flow`, what `questions` gives while it is not built): stage by stage, the steps and who does each. Keep the person going with short prompts ("and then?", "who picks it up?", "is anything done in parallel?", "anything before that?"). Capture everything they say on the way (a wait, a time, an AI use, a rework, a pain) on its box: the detail is welcome, it is just not a prerequisite to go on. Now and then, add one detail question where it is worth most, as `questions --near <stage>` suggests (marked `optional`): the wait before a step that waits by nature (a review, a validation, a meeting, a release train), the AI use on a step that writes, codes or tests, or the time of a step that sounds long. One such question at a time, then back to the stream; if the answer is not known, move on.
 3. **Enrich it** (pass `enrich`, once the stream is there, or earlier when the person wants to): `questions --text` shows what is missing by theme (`wait`, `work`, `ai`, `rework`, `ca`, `who`, `tools`, `check`) with the number of boxes. Offer the choice in one line, from where the discussion is ("the stream has 24 steps; still missing: waits on 14, AI on 12, work on 9. Waits first, over the whole map or on Build?"). Then ask one theme at a time over a stage or the whole map, in one question covering several boxes (`questions --theme wait --stage build`, or `--near build` for that stage then its neighbours): "In Build, how long does it wait before the plan, the coding and the review?".
 4. **Record each answer** with one `patch` (smallest change, as below), and say in one line what you recorded. Record everything the answer brings, not only what you asked. When there is no answer ("we don't know", "no AI there", "nothing comes back"), add the keys of the boxes concerned to `asked` (`{"push": "asked", "value": "<key>"}`) so they are not asked again; an unknown value stays `null`.
@@ -73,7 +77,7 @@ Whether the map is new or existing, inputs are what people say or write: worksho
 
 When an input is ambiguous, make no edit and ask one short question. When an input contradicts the map, correct it and say so in the log. When you choose between two boxes (a wait that could sit on either), say which one and why, in the log and in your reply.
 
-A frequency ("one release in five", "every feature") goes in the loop's `count`, in the words used with who said it; a new figure on an existing loop is added next to the old one, not over it, unless it corrects it. When the map has `i18n.fr`, add the French for each new text you write.
+A frequency ("one release in five", "every feature") goes in the loop's `count`, in the words used with who said it; a new figure on an existing loop is added next to the old one, not over it, unless it corrects it. When the map has other languages, add the translation of each new text you write (see **Languages**).
 
 `patch` ops: `{"set": "<path>", "value": …}`, `{"push": "<path>", "value": …}`, `{"insert": "<path>", "at": 0, "value": …}`, `{"del": "<path>"}`, `{"log": "text"}`, `{"detail": {"stage": "<id>", "steps": [...], "to": "<sub-step id>"}}`, `{"stage": {…}}` (see **Changing the stages**). A path is dot-separated; in a list a segment picks the item by `id` (or `name`, or an AI use's `label`, or an index): `stages.build.steps.claude-writes-code.work`, `stages.qa.steps.smoke-tests.ai`, `loops.refinement-meetings.count`, `hypotheses.H1.status`.
 
@@ -87,6 +91,14 @@ The stages are the team's, not the skill's: start from those given (or the start
 - `{"stage": {"remove": "planning"}}` for an empty stage; one that holds anything (sub-steps, durations, AI uses, markers, loops) needs `"into": "<stage id>"`, the stage it merges into: its sub-steps (or the stage itself, as one sub-step) move there after the target's own, and its loop ends follow. Nothing is lost and the totals stay the same.
 
 Each op writes its own log line; add a `{"log"}` op saying who asked for it. Change a stage only when the people say so ("for us review is part of build", "we have a design stage before refinement"); an activity inside a stage (test design, a security check, a demo) stays a sub-step, not a new stage. Before removing or merging a stage that holds work, say what will move where and ask. A stage skipped on this case stays, with a `not-done` marker. Never edit `stages` or `case.stages` with `set`/`push`/`del`: the validator refuses a map where they differ.
+
+## Languages
+
+`languages` lists the map's languages, its own first (default `["en"]`); any language works. Every text of the map is written in the first one, and `i18n.<code>` gives each text (whole) in each other language. The page offers a switch for two languages and a list for more.
+
+- **Map texts:** `texts <map.json> --lang <code> --missing` lists the texts without a translation; add them with one `{"translate": {"lang": "<code>", "texts": {"<text>": "<translation>", …}}}` op. A name that reads the same (a person, a tool, "QA") gets itself as translation, so the list empties. Translate as you go: each change that adds a text adds its translations in the same `patch`.
+- **Page labels:** the default page ships English and French. For another language, `labels --lang <code>` prints the English labels: translate the values (keep the keys, the `{n}`, `{m}`, `{b}`, `{l}` placeholders and the `one`/`other` forms), set them with `{"set": "ui.<code>", "value": {…}}`, with `langName` (the language's own name) and `dayUnit` (the short unit for working days). A label left out shows in English. `labels <map.json> --lang <code> --missing` lists what is still missing.
+- To add a language later: add it to `languages` (`set`), then the two steps above. To change the map's own language, rewrite the texts and swap the dictionaries, never mix two languages in the texts.
 
 ## Model
 
@@ -107,7 +119,8 @@ Each op writes its own log line; add a `{"log"}` op saying who asked for it. Cha
 - `hypotheses[]`: `{id, text, status}`, status `open`, `confirmed`, `refuted` or `partial`. The status changes only when the people concerned say so.
 - `asked[]` (optional): keys from `questions` (one per box and theme, e.g. `build/coding:wait`) that were asked and got no answer, so they are not asked again.
 - `log[]`: `{at, text}`, one entry per meaningful change, shown under the map as the latest changes.
-- `i18n.fr` (optional): French text for each English text of the map, used by the page's FR/EN switch. A text without a translation shows in English in both.
+- `languages` (optional, default `["en"]`), `i18n.<code>` (text → translation, for each language but the first), `ui.<code>` (page labels of a language the page does not ship): see **Languages**. A text without a translation shows in the map's language.
+- `theme` (optional): the built-in theme of the default page, `neutral` (default), `blueprint`, `graphite`, `soft` or `contrast`. `themeTokens` (optional): `{"light": {"--token": "value"}, "dark": {…}}`, the organisation's colours, font or radius on top of the theme.
 
 ## Rules
 
@@ -128,8 +141,8 @@ Each op writes its own log line; add a `{"log"}` op saying who asked for it. Cha
 
 Three ways, from the lightest:
 
-- **The default page** (`assets/default-page.html`): neutral (system fonts, greys, one colour for wait and one for work), light and dark, FR/EN, and every layout rule below. `serve` and `page` use it when no page is given. Use it unless a look is asked for.
-- **The default page in the organisation's colours:** copy it next to the map and change only its tokens (the first `:root` blocks: colours, font, radius, light and dark), then `serve --page` or `embed` it. Enough for most "use our colours / our font".
+- **The default page** (`assets/default-page.html`), in one of its built-in themes: `neutral` (default: system fonts, greys), `blueprint` (blue, technical, monospace figures), `graphite` (black and white, sharp), `soft` (rounded, pastel), `contrast` (high contrast, for projection or low vision). All in light and dark, in any language, with every layout rule below; no external resource, so it works offline. `serve` and `page` use it when no page is given. To choose, show them side by side: `designs <map.json> --output <dir>` (open `index.html`), or `/designs` on `serve`; then `{"set": "theme", "value": "<name>"}`.
+- **The default page in the organisation's colours:** any theme plus `themeTokens` in the map (`{"light": {"--work": "#0055aa", "--font": "Inter, sans-serif", "--radius": "4px"}, "dark": {…}}`; the tokens are the CSS custom properties at the top of the default page). Ask for their colours, font or a link to their site or style guide, and set both light and dark. Enough for most "use our colours / our font".
 - **A page in a full design system** (the organisation's components, or a public one): you write it, from the layout rules below and the design system you are given (its tokens, type, components). Take the default page as the reference for what to show and how it behaves.
 
 When you update a map that already has a page, keep its design unless asked to change it. To redesign, write or restyle a page from the same JSON; the map does not change.
@@ -160,7 +173,7 @@ The design system decides colours, type, spacing and components. It never change
     - The per-stage table has a wait/work bar per stage (same colours and scale as the timeline), a "whole stream" total row (from `totals` and `counts`: `reworkOut`, `iterations`, `aiUses`, `boxesWithoutWork`), and the note "Recorded durations only: a box without duration counts as 0; the figures move as missing times come in."
     - The legend explains every symbol used: the queue ▽, work time, %C&A and rolled %C&A, ↩ and ↻, batch, stacked boxes, dashed = to confirm, ~ estimate, felt, ? unknown, the timeline, lead time and flow efficiency, and that a stage's times are the sum of its boxes (Σ).
     - Latest changes: the last 8 `log` entries, newest first.
-    - With a FR/EN switch, the page's own labels switch too, not only the map's texts.
+    - With a language switch or list, the page's own labels switch too, not only the map's texts.
 12. **Continue this map** (always, last section): how to carry on with this map. Three short steps: install the value-stream-map skill (link: https://github.com/manufacture-dev/value-stream-map), get this map's data, ask an agent to continue it. Then two buttons on the exact `vsm-data` content:
     - **Copy the data**: `navigator.clipboard.writeText(json)` inside the click; if it fails, show the JSON in a read-only, selected text area so it can be copied by hand.
     - **Download (JSON)**, as `<slug of case.title>.json`: in a Claude artifact (where `window.claude` exists), through `await window.claude.use('downloads')` and `dl.save({filename, data: json})`, shown only when that returns non-null (declare the `downloads` capability when publishing); anywhere else (a local file, `serve`, any web host), a plain download link on a Blob. The default page does both.
@@ -177,7 +190,7 @@ What every page must show, from `vsm-data` and `vsm-summary` (never recompute a 
 - **Hypotheses** with their status, **parking** ideas, and the latest `log` entries.
 - **Numbers:** days with one decimal (67.7 d); under 1 day in hours (1 day = 8 h); a range as min–max, prefixed "~" when approximate; `max` alone as "≤"; `null` as "?". A stage whose `noDurations` is true shows "?" for its times, never 0.
 - **A legend:** AI levels (assistant, tooled, prepares, chains), marker kinds, the symbols you use.
-- **Language:** the map's language; when the map has `i18n.fr`, offer a FR/EN switch using it. `i18n.fr` maps whole texts; translate a text only when it is a key there (a stage named "QA" and the role "QA" are the same text, so give such words no entry).
+- **Language:** the map's own language first; with other `languages`, a switch (two languages) or a list (more), translating the map's texts through `i18n.<code>` (whole texts; a text missing there shows as written) and the page's own labels too.
 
 Rules for the page:
 
