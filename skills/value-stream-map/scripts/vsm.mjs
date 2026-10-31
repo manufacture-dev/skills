@@ -205,6 +205,8 @@ function summarize(data) {
       noDurations: boxes.every((x) => !x.work && !x.wait),
       rolledCA: (() => { const v = boxes.filter((x) => typeof x.ca === 'number').map((x) => x.ca); return v.length ? Math.round(v.reduce((m, c) => (m * c) / 100, 1) * 100) : null; })(),
       markers: boxes.reduce((m, x) => m + (x.markers || []).length, 0) + (st.length ? (s.markers || []).length : 0),
+      actors: s.actors || [...new Set(st.map((x) => x.who).filter(Boolean).flatMap((w) => String(w).split(/\s*,\s*/)))].join(', ') || null,
+      tools: s.tools || [...new Set(st.map((x) => x.tools).filter(Boolean).flatMap((w) => String(w).split(/\s*,\s*/)))].join(', ') || null,
       batches: boxes.filter((x) => x.batch).map((x) => x.batch),
     };
   });
