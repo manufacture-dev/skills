@@ -11,7 +11,7 @@ A value stream map shows how one real piece of work travels from the request to 
 CLI (Node 18+, no dependencies). Run it from the project, with the path to this skill's `scripts/vsm.mjs` (for example `node .claude/skills/value-stream-map/scripts/vsm.mjs outline map.json`); below, `scripts/vsm.mjs` stands for that path:
 
 ```bash
-node scripts/vsm.mjs new      <map.json> --title <text> --stages "<Stage 1>,<Stage 2>,…"
+node scripts/vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"]
 node scripts/vsm.mjs validate <map.json>
 node scripts/vsm.mjs outline  <map.json>                      # compact view: ids and what each box holds
 node scripts/vsm.mjs patch    <map.json> --ops '<json array>' # apply changes, validate, write only if valid
@@ -24,7 +24,7 @@ node scripts/vsm.mjs import   <page.html> --output <map.json> # take the map bac
 ## Starting point
 
 - **From a page.** A map page carries its data: save the page as HTML and run `import`. A page with a "Continue this map" panel also lets you download or copy the data (paste it into a `.json` file, or into the conversation and ask the agent to save it).
-- **From scratch.** `node scripts/vsm.mjs new <map.json> --title "<the case>" --stages "Story,Refinement,Build,Review,QA,Release"` creates an empty map with your stages, in order.
+- **From scratch.** `node scripts/vsm.mjs new <map.json> --title "<the case>" --stages "Story,Refinement,Build,Review,QA,Release"` creates an empty map with your stages, in order. Without `--stages`, it starts from the starter stages (Request, Refinement, Build, Review, QA, Release), which the discussion then changes (see **Changing the stages**).
 - To share it, write the page (below) and publish it, for example as a Claude artifact. It is your own page; the one you started from stays as it was.
 
 ## Building a map from scratch
@@ -32,7 +32,7 @@ node scripts/vsm.mjs import   <page.html> --output <map.json> # take the map bac
 Map one real, recent piece of work (a feature that reached production), not the process in general.
 
 1. The case: what it is, what starts the work (`case.trigger`), when value is delivered (`case.end`), who takes part (`case.team`).
-2. The stages, as the team names them, in order: `new` with `--stages`. They stay fixed from then on.
+2. The stages, as the team names them, in order: `new` with `--stages`, or the starter stages, shown to the people and corrected with them (renamed, added, removed, reordered) before going into detail.
 3. Stage by stage, in flow order: the steps inside it and who does each (`detail`), then for each step its work time, how long the work waited before it, and what it uses (tools, AI).
 4. Rework: what comes back, from which step to which, how often and at what cost (`loops`), and for each step that receives work, how much of it can be used as is (`ca`).
 5. Read the map back with the people who described it: confirm each stage, fill the durations still missing, note ideas for later in `parking`.
@@ -44,7 +44,7 @@ Ask one question at a time and record only what was said; unknown stays `null`. 
 Whether the map is new or existing, inputs are what people say or write: workshop notes, a pasted answer, a person describing their part of the flow, a correction.
 
 1. Run `outline` to see the current boxes and their ids.
-2. Decide what the input changes: a sub-step, who does it, a tool, a wait or work time, an AI use, a marker, a rework loop, a %C&A, an idea for later, a hypothesis status.
+2. Decide what the input changes: a stage (added, renamed, moved, merged), a sub-step, who does it, a tool, a wait or work time, an AI use, a marker, a rework loop, a %C&A, an idea for later, a hypothesis status.
 3. Make the smallest change with one `patch` call holding every change, plus one `{"log": "…"}` op saying what changed and from whom. Keep existing ids and order.
 4. `patch` validates: if it refuses, nothing was written; fix the ops and send again.
 5. Say in one or two lines what changed, then what is still missing on the boxes you touched (a wait time, a work time, a %C&A) as a question to ask.
@@ -53,12 +53,23 @@ When an input is ambiguous, make no edit and ask one short question. When an inp
 
 A frequency ("one release in five", "every feature") goes in the loop's `count`, in the words used with who said it; a new figure on an existing loop is added next to the old one, not over it, unless it corrects it. When the map has `i18n.fr`, add the French for each new text you write.
 
-`patch` ops: `{"set": "<path>", "value": …}`, `{"push": "<path>", "value": …}`, `{"insert": "<path>", "at": 0, "value": …}`, `{"del": "<path>"}`, `{"log": "text"}`, `{"detail": {"stage": "<id>", "steps": [...], "to": "<sub-step id>"}}`. A path is dot-separated; in a list a segment picks the item by `id` (or `name`, or an AI use's `label`, or an index): `stages.build.steps.claude-writes-code.work`, `stages.qa.steps.smoke-tests.ai`, `loops.refinement-meetings.count`, `hypotheses.H1.status`.
+`patch` ops: `{"set": "<path>", "value": …}`, `{"push": "<path>", "value": …}`, `{"insert": "<path>", "at": 0, "value": …}`, `{"del": "<path>"}`, `{"log": "text"}`, `{"detail": {"stage": "<id>", "steps": [...], "to": "<sub-step id>"}}`, `{"stage": {…}}` (see **Changing the stages**). A path is dot-separated; in a list a segment picks the item by `id` (or `name`, or an AI use's `label`, or an index): `stages.build.steps.claude-writes-code.work`, `stages.qa.steps.smoke-tests.ai`, `loops.refinement-meetings.count`, `hypotheses.H1.status`.
+
+## Changing the stages
+
+The stages are the team's, not the skill's: start from those given (or the starter ones) and change them whenever the people say their flow is cut differently, with a `stage` op in `patch`. The id of a stage never changes, so loops and references hold.
+
+- `{"stage": {"add": {"name": "Design", "fr": "Conception"}, "after": "refinement"}}` (or `"before"`; at the end when neither): a new, empty stage, `assumed`.
+- `{"stage": {"rename": "qa", "name": "Testing", "fr": "Tests"}}`.
+- `{"stage": {"move": "review", "after": "qa"}}` (or `"before"`).
+- `{"stage": {"remove": "planning"}}` for an empty stage; one that holds anything (sub-steps, durations, AI uses, markers, loops) needs `"into": "<stage id>"`, the stage it merges into: its sub-steps (or the stage itself, as one sub-step) move there after the target's own, and its loop ends follow. Nothing is lost and the totals stay the same.
+
+Each op writes its own log line; add a `{"log"}` op saying who asked for it. Change a stage only when the people say so ("for us review is part of build", "we have a design stage before refinement"); an activity inside a stage (test design, a security check, a demo) stays a sub-step, not a new stage. Before removing or merging a stage that holds work, say what will move where and ask. A stage skipped on this case stays, with a `not-done` marker. Never edit `stages` or `case.stages` with `set`/`push`/`del`: the validator refuses a map where they differ.
 
 ## Model
 
 - `case`: `client`, `title`, `trigger` (what starts the work), `end` (when value is delivered), `team`, `stages` (the stage ids, in order).
-- `stages[]`: the stages of the delivery cycle as the team names them, **fixed**: never add, remove, merge or reorder a stage (the validator checks them against `case.stages`). Any other activity (test design, a security check, a demo) is a sub-step of the stage where it happens. A stage skipped on the case stays, with a `not-done` marker. Fields: `id`, `name`, `status` (`assumed` until people confirm it on the real case, then `confirmed`), `actors`, `tools`, and, while the stage has no sub-steps, `work`, `wait`, `ai[]`, `markers[]`, `ca`, `batch`.
+- `stages[]`: the stages of the delivery cycle as the team names them, in order, changed only with `stage` ops (above), which keep `case.stages` (their ids, in order) in step. Fields: `id`, `name`, `status` (`assumed` until people confirm it on the real case, then `confirmed`), `actors`, `tools`, and, while the stage has no sub-steps, `work`, `wait`, `ai[]`, `markers[]`, `ca`, `batch`.
 - `steps[]` inside a stage: `{id, name, who, tools, work, wait, status, parallel, ai[], markers[], ca, caApprox, caSource, batch}`. `id` is required, lowercase-dashes, unique in the stage and stable (loops point at it).
 - **Attach every item to the most precise box.** Once a stage has sub-steps, nothing stays on the stage: no duration, AI use or marker. To split a stage, use `detail` (or a `detail` op): it moves the stage's items to a sub-step and logs what it moved; then adjust what it guessed.
 - `work` / `wait`: `null` when unknown, else `{"days": n}` in working days (1 day = 8 hours, so 2 hours = 0.25). `"approx": true` for an estimate, `"text"` for the words used (`"up to 1 month"`), `"min"`/`"max"` for a range (midpoint in `days`), `"felt": true` when it is a feeling rather than a measure, `"source"` for who said it. `wait` is the time the work waits *before* that box starts; the page draws it as a queue between boxes.

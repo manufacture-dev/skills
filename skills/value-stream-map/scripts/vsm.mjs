@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Value stream map: create, validate, outline, edit, compute its figures, embed it in a page, import it from one.
 // The page itself is written by the agent, in whatever design system it is given (see SKILL.md). No dependencies, Node 18+.
-//   node vsm.mjs new      <map.json> --title <text> --stages "<Stage 1>,<Stage 2>,…" [--client <name>]
+//   node vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"] [--client <name>]   (default: the starter stages)
 //   node vsm.mjs validate <map.json>
 //   node vsm.mjs outline  <map.json>                       (compact view for an agent: ids and what each box holds)
 //   node vsm.mjs patch    <map.json> --ops '<json array>'  (apply changes, validate, write only if valid)
@@ -16,6 +16,9 @@ export const MARKER_KINDS = ['accelerates', 'slows', 'bottleneck', 'new-bottlene
 export const AI_LEVELS = ['assistant', 'tooled', 'prepares', 'chains'];
 export const STAGE_STATUS = ['assumed', 'confirmed'];
 export const HYPOTHESIS_STATUS = ['open', 'confirmed', 'refuted', 'partial'];
+// The stages a new map starts from when none are given; the team changes them as the discussion goes (stage ops).
+export const STARTER_STAGES = ['Request', 'Refinement', 'Build', 'Review', 'QA', 'Release'];
+const slug = (x) => String(x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 // Write through a temporary file then rename: the preview never reads a half-written map.
 function writeAtomic(file, data) { const tmp = `${file}.${process.pid}.tmp`; writeFileSync(tmp, JSON.stringify(data, null, 2) + '\n'); renameSync(tmp, file); }
 
@@ -40,7 +43,7 @@ export function validate(data) {
     if (s.status && !STAGE_STATUS.includes(s.status)) err(`${p}.status`, `one of ${STAGE_STATUS.join(', ')}`);
     if (!isDuration(s.work)) err(`${p}.work`, 'null or {"days": number, "approx"?: bool, "text"?: string}');
     if (!isDuration(s.wait)) err(`${p}.wait`, 'null or {"days": number, "approx"?: bool, "text"?: string}');
-    if (s.parallel) err(`${p}.parallel`, 'stages are the fixed SDLC stages, never parallel: put the activity as a parallel sub-step');
+    if (s.parallel) err(`${p}.parallel`, 'stages follow each other, never parallel: put the activity as a parallel sub-step');
     const caOk = (v) => v === undefined || (typeof v === 'number' && v >= 0 && v <= 100);
     if (!caOk(s.ca)) err(`${p}.ca`, 'percent complete and accurate, 0–100');
     (s.steps || []).forEach((x, j) => { if (x && !caOk(x.ca)) err(`${p}.steps[${j}].ca`, 'percent complete and accurate, 0–100'); if (x && x.batch !== undefined && typeof x.batch !== 'string') err(`${p}.steps[${j}].batch`, 'string'); });
@@ -85,11 +88,11 @@ export function validate(data) {
       if (typeof m.text !== 'string' || !m.text) err(`${p}.markers[${j}].text`, 'required string');
     });
   });
-  // case.stages: the SDLC stages given by the client, fixed for the workshop. The map keeps exactly
-  // these, in this order: the work is detailed in their sub-steps, never in new stages.
+  // case.stages: the stage ids in order, kept in step with stages[] by the stage ops (add, rename, move, remove).
+  // A mismatch means stages were edited by hand: change them with a {"stage": …} op instead.
   if (data.case && Array.isArray(data.case.stages)) {
     const got = data.stages.map((x) => x.id).join(', '), want = data.case.stages.join(', ');
-    if (got !== want) err('stages', `must be exactly the SDLC stages, in order: ${want} (got: ${got}); detail the work as sub-steps`);
+    if (got !== want) err('stages', `case.stages (${want}) and stages (${got}) differ: change stages with a {"stage": …} op`);
   }
   (data.loops || []).forEach((l, i) => {
     if (!ids.has(l.from)) err(`loops[${i}].from`, `unknown stage "${l.from}"`);
@@ -170,6 +173,83 @@ function detailStage(data, stageId, steps, toId, at) {
   }
   (data.log = data.log || []).push({ at, text: `${st.name} detailed in ${st.steps.length} sub-steps` + (moved.length ? `; moved: ${moved.join(', ')}` : '') + (whole ? `; whole-stage figure "${whole.text || whole.days + ' d'}" to spread over the sub-steps` : '') + '.' });
   return `${st.id}: ${st.steps.map((x) => x.id).join(', ')}${moved.length ? ' · ' + moved.join(', ') : ''}${whole ? ' · whole-stage work in the log' : ''}`;
+}
+
+// Change the stages themselves, as the team corrects them during the discussion. One op, one change:
+//   {"add": {"name", "id"?, "fr"?}, "after"|"before": "<id>"}   new stage, assumed, empty (default: at the end)
+//   {"rename": "<id>", "name": "…", "fr"?: "…"}                 the id stays, so loops and references hold
+//   {"move": "<id>", "after"|"before": "<id>"}
+//   {"remove": "<id>", "into"?: "<id>"}   an empty stage goes; one holding anything needs "into", the stage it merges
+//                                         into: its sub-steps (or the stage itself, as one sub-step) move there,
+//                                         after the target's own, and its loop ends follow.
+// Each op writes its own log line; add a {"log"} op saying who asked for it.
+function stageOp(data, op, at) {
+  const stages = data.stages, ids = () => stages.map((x) => x.id);
+  const find = (id) => { const s = stages.find((x) => x.id === id); if (!s) throw new Error(`unknown stage "${id}"`); return s; };
+  const place = (st) => {
+    const ref = op.after || op.before;
+    if (!ref) { stages.push(st); return; }
+    find(ref); stages.splice(ids().indexOf(ref) + (op.after ? 1 : 0), 0, st);
+  };
+  const fr = (en, txt) => { if (txt) { data.i18n = data.i18n || {}; (data.i18n.fr = data.i18n.fr || {})[en] = txt; } };
+  const holds = (s) => (s.steps || []).length || s.work || s.wait || (s.ai || []).length || (s.markers || []).length
+    || s.ca !== undefined || s.batch || list(s.actors).length || list(s.tools).length;
+  const log = (text) => (data.log = data.log || []).push({ at, text });
+  // actors and tools are written as "A, B" (a list is read too).
+  const list = (v) => (Array.isArray(v) ? v : String(v || '').split(',')).map((x) => String(x).trim()).filter(Boolean);
+  const join = (...vs) => [...new Set(vs.flatMap(list))].join(', ') || undefined;
+  let text;
+  if (op.add) {
+    const name = op.add.name; if (!name) throw new Error('stage add: a name');
+    const id = op.add.id || slug(name);
+    if (ids().includes(id)) throw new Error(`stage "${id}" exists`);
+    place({ id, name, status: 'assumed', work: null, wait: null, ai: [], markers: [] }); fr(name, op.add.fr);
+    text = `Stage "${name}" added${op.after ? ' after ' + find(op.after).name : op.before ? ' before ' + find(op.before).name : ' at the end'}.`;
+  } else if (op.rename) {
+    const st = find(op.rename); if (!op.name) throw new Error('stage rename: a name');
+    const old = st.name; st.name = op.name; fr(op.name, op.fr);
+    text = `Stage "${old}" renamed "${op.name}".`;
+  } else if (op.move) {
+    const st = find(op.move); if (!op.after && !op.before) throw new Error('stage move: "after" or "before"');
+    if ((op.after || op.before) === st.id) throw new Error('stage move: next to another stage');
+    stages.splice(ids().indexOf(st.id), 1); place(st);
+    text = `Stage "${st.name}" moved ${op.after ? 'after ' + find(op.after).name : 'before ' + find(op.before).name}.`;
+  } else if (op.remove) {
+    const st = find(op.remove);
+    if (!op.into) {
+      const used = (data.loops || []).some((l) => l.from === st.id || l.to === st.id);
+      if (holds(st) || used) throw new Error(`stage "${st.id}" holds work or loops: give "into", the stage it merges into`);
+      stages.splice(ids().indexOf(st.id), 1);
+      text = `Stage "${st.name}" removed.`;
+    } else {
+      const to = find(op.into); if (to.id === st.id) throw new Error('stage remove: "into" another stage');
+      const asStep = (s) => { const x = { id: s.id, name: s.name, who: join(s.actors), tools: join(s.tools), status: s.status };
+        for (const k of ['work', 'wait', 'ai', 'markers', 'ca', 'caApprox', 'caSource', 'batch']) if (s[k] !== undefined) x[k] = s[k];
+        return JSON.parse(JSON.stringify(x)); };
+      // The target keeps its own box as a sub-step when it had none, so nothing that sat on it is lost.
+      if (!(to.steps || []).length && holds(to)) {
+        const own = asStep(to); to.steps = [own];
+        for (const k of ['work', 'wait', 'ai', 'markers', 'ca', 'caApprox', 'caSource', 'batch']) delete to[k];
+        to.work = null; to.wait = null;
+        for (const l of data.loops || []) { if (l.from === to.id && !l.fromStep) l.fromStep = own.id; if (l.to === to.id && !l.toStep) l.toStep = own.id; }
+      }
+      const moved = (st.steps || []).length ? st.steps : (holds(st) ? [asStep(st)] : []);
+      const taken = new Set((to.steps || []).map((x) => x.id)), rename = {};
+      for (const x of moved) { let id = x.id; while (taken.has(id)) id = `${st.id}-${id}`; rename[x.id] = id; x.id = id; taken.add(id); }
+      to.steps = (to.steps || []).concat(moved);
+      if (!to.steps.length) delete to.steps;
+      for (const k of ['actors', 'tools']) { const v = join(to[k], st[k]); if (v) to[k] = v; }
+      for (const l of data.loops || []) {
+        if (l.from === st.id) { l.from = to.id; l.fromStep = l.fromStep ? rename[l.fromStep] : (moved[0] || {}).id; if (!l.fromStep) delete l.fromStep; }
+        if (l.to === st.id) { l.to = to.id; l.toStep = l.toStep ? rename[l.toStep] : (moved[0] || {}).id; if (!l.toStep) delete l.toStep; }
+      }
+      stages.splice(ids().indexOf(st.id), 1);
+      text = `Stage "${st.name}" merged into "${to.name}"` + (moved.length ? `: ${moved.map((x) => x.name).join(', ')} now sub-step(s) of ${to.name}` : '') + '.';
+    }
+  } else throw new Error(`unknown stage op ${JSON.stringify(op)}`);
+  if (data.case) data.case.stages = ids();
+  log(text);
+  return text;
 }
 
 // The figures a page shows, computed once here so every page (whatever its design) shows the same numbers.
@@ -263,17 +343,17 @@ if (!cmd || !fileArg) {
 }
 const file = resolve(fileArg);
 if (cmd === 'new') {
-  // An empty map: the case and its stages, in order (fixed from then on), nothing else.
+  // An empty map: the case and its stages, in order (the starter stages when none are given), nothing else.
   if (existsSync(file) && !process.argv.includes('--force')) { console.error(`exists: ${file} (use --force)`); process.exit(1); }
-  const names = String(arg('--stages') || '').split(',').map((x) => x.trim()).filter(Boolean);
-  if (!arg('--title') || !names.length) { console.error('new needs --title and --stages "<Stage 1>,<Stage 2>,…"'); process.exit(2); }
-  const slug = (x) => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const given = String(arg('--stages') || '').split(',').map((x) => x.trim()).filter(Boolean);
+  const names = given.length ? given : STARTER_STAGES;
+  if (!arg('--title')) { console.error('new needs --title [--stages "<Stage 1>,<Stage 2>,…"]'); process.exit(2); }
   const stages = names.map((n) => ({ id: slug(n), name: n, status: 'assumed', work: null, wait: null, ai: [], markers: [] }));
   const data = { case: { client: arg('--client') || '', title: arg('--title'), trigger: '', end: '', team: [], stages: stages.map((x) => x.id) }, stages, loops: [], parking: [], hypotheses: [], log: [] };
   const errs = validate(data);
   if (errs.length) { console.error(`INVALID:\n- ${errs.join('\n- ')}`); process.exit(1); }
   writeAtomic(file, data);
-  console.log(`CREATED ${file} (${stages.map((x) => x.id).join(', ')})`);
+  console.log(`CREATED ${file} (${stages.map((x) => x.id).join(', ')}${given.length ? '' : ', the starter stages'})`);
   process.exit(0);
 }
 if (!existsSync(file)) { console.error(`not found: ${file}`); process.exit(2); }
@@ -300,6 +380,7 @@ if (cmd === 'validate') {
   // Apply a list of changes, validate, and write only if the result is valid. --ops '<json array>' or --ops-file <file>. Each op:
   //   {"set": "<path>", "value": …}  {"push": "<path>", "value": …}  {"insert": "<path>", "at": 0, "value": …}  {"del": "<path>"}  {"log": "text"}
   //   {"detail": {"stage": "<id>", "steps": [...], "to": "<sub-step id>"}}   (split a stage, then go on with other ops)
+  //   {"stage": {"add"|"rename"|"move"|"remove": …}}   (change the stages themselves: see stageOp)
   // A path is dot-separated; inside a list a segment picks the item whose id (or name, or AI label) matches, or an index:
   //   "stages.build.steps.code.work", "stages.qa.steps.smoke-tests.ai", "loops.qa-to-build.count", "hypotheses.h1.status".
   let code = 0;
@@ -328,6 +409,7 @@ if (cmd === 'validate') {
     try {
       for (const op of Array.isArray(ops) ? ops : [ops]) {
         if (op.detail !== undefined) detailStage(data, op.detail.stage, op.detail.steps, op.detail.to, at);
+        else if (op.stage !== undefined) stageOp(data, op.stage, at);
         else if (op.log !== undefined) (data.log = data.log || []).push({ at, text: op.log });
         else if (op.set !== undefined) { const r = walk(op.set, null); r.parent[r.key] = op.value; }
         else if (op.insert !== undefined) { const r = walk(op.insert, []); if (r.ensure) r.ensure(); const l = r.parent[r.key]; if (!Array.isArray(l)) throw new Error(`"${op.insert}" is not a list`); l.splice(Math.max(0, Math.min(Number(op.at) || 0, l.length)), 0, op.value); }

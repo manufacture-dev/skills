@@ -19,7 +19,7 @@ Requires Node 18 or later; no other dependency.
 
 ## Use
 
-1. Start a map: an empty one with `node .claude/skills/value-stream-map/scripts/vsm.mjs new map.json --title "<the case>" --stages "Story,Build,Review,QA,Release"`, or an existing one: on a published map page, **Continue this map** downloads or copies its data (a `.json` file).
+1. Start a map: an empty one with `node .claude/skills/value-stream-map/scripts/vsm.mjs new map.json --title "<the case>" --stages "Story,Build,Review,QA,Release"` (or without `--stages`, from starter stages that you then rename, add, move or remove with Claude as you go), or an existing one: on a published map page, **Continue this map** downloads or copies its data (a `.json` file).
 2. Ask Claude, for example: *"Let's map how our last feature went to production, in map.json"*, or *"Continue the value stream map in map.json: QA says one story in two comes back because the acceptance criteria are not testable."*
 3. Ask for the page, for example: *"Make the page for map.json"* or *"Redo the map's page in our design system"*. The page carries the map's data, so it can be picked up again later.
 
