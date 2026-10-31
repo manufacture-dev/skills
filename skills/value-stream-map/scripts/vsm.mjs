@@ -12,8 +12,19 @@
 //                                                          (what is still to ask, in interview order, or nearest the box just discussed first)
 //   node vsm.mjs embed    <map.json> --page <page.html>    (put the map and its figures into the page, replacing any previous copy)
 //   node vsm.mjs import   <page.html> --output <map.json> [--force]   (take the map back out of a page)
+//   node vsm.mjs page     <map.json> --output <page.html> [--force]   (the default page, with the map in it: a standalone file)
+//   node vsm.mjs serve    <map.json> [--page <page.html>] [--port 4173]   (local site that reloads on every change)
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, statSync, renameSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createServer } from 'node:http';
+import { watch } from 'node:fs';
+
+if (Number(process.versions.node.split('.')[0]) < 18) {
+  console.error(`Node 18 or later is needed (this is ${process.version}): https://nodejs.org (or brew install node, winget install OpenJS.NodeJS.LTS).`);
+  process.exit(2);
+}
+const DEFAULT_PAGE = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'default-page.html');
 
 export const MARKER_KINDS = ['accelerates', 'slows', 'bottleneck', 'new-bottleneck', 'pain', 'new-pain', 'duplicate', 'not-done'];
 export const AI_LEVELS = ['assistant', 'tooled', 'prepares', 'chains'];
@@ -116,6 +127,19 @@ export function validate(data) {
   (data.notes || []).forEach((x, i) => { if (!x || typeof x.text !== 'string' || !x.text) err(`notes[${i}].text`, 'required string'); });
   if (data.asked !== undefined && (!Array.isArray(data.asked) || data.asked.some((k) => typeof k !== 'string'))) err('asked', 'list of question keys');
   return errors;
+}
+
+// Put the map (vsm-data) and its figures (vsm-summary) into a page: existing tags are replaced in place; new ones
+// go before the page's first script, so a script that reads them at load finds them.
+function embedIn(html, data) {
+  for (const [id, v] of [['vsm-data', data], ['vsm-summary', summarize(data)]]) {
+    const tag = jsonTag(id, v);
+    if (TAG(id).test(html)) html = html.replace(TAG(id), () => tag);
+    else if (/<script[\s>]/i.test(html)) html = html.replace(/<script[\s>]/i, (m) => `${tag}\n${m}`);
+    else if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, () => `${tag}\n</body>`);
+    else html += `\n${tag}\n`;
+  }
+  return html;
 }
 
 function load(file) {
@@ -417,7 +441,7 @@ const jsonTag = (id, v) => `<script id="${id}" type="application/json">${JSON.st
 
 const [cmd, fileArg] = process.argv.slice(2);
 if (!cmd || !fileArg) {
-  console.error('usage: vsm.mjs <new|validate|outline|patch|detail|summary|questions|embed|import> <file> [--ops <json>] [--stage <id> --steps <json> [--to <id>]] [--page <page.html>] [--output <file>] [--force] [--text]');
+  console.error('usage: vsm.mjs <new|validate|outline|patch|detail|summary|questions|embed|import|page|serve> <file> [--ops <json>] [--stage <id> --steps <json> [--to <id>]] [--page <page.html>] [--output <file>] [--force] [--text]');
   process.exit(2);
 }
 const file = resolve(fileArg);
@@ -561,6 +585,53 @@ if (cmd === 'validate') {
   for (const r of sm.stages) console.log(`${r.n}. ${r.name} [${r.status}] wait ${r.wait} · work ${r.work} · lead ${r.lead} (${r.shareOfLead ?? 0} %) · ↩ ${r.reworkOut} ↻ ${r.iterations} · AI ${r.aiUses} · without work ${r.withoutWork}/${r.boxes}`);
   if (sm.upstream) console.log(`upstream (outside the lead time): ${sm.upstream.boxes} boxes, ${sm.upstream.lead} d`);
   console.log(`to confirm: ${sm.toConfirm.length} · without work ${sm.missing.work.length} · without wait ${sm.missing.wait.length}`);
+} else if (cmd === 'page') {
+  // The skill's default page (neutral design, every layout rule), with the map in it: one file to open or host anywhere.
+  const out = arg('--output');
+  if (!out) { console.error('--output <page.html> required'); process.exit(2); }
+  if (existsSync(out) && !process.argv.includes('--force')) { console.error(`exists: ${out} (use --force)`); process.exit(1); }
+  const { data, errors } = load(file);
+  if (errors.length) { console.error(`INVALID ${file}\n- ${errors.join('\n- ')}`); process.exit(1); }
+  writeFileSync(out, embedIn(readFileSync(DEFAULT_PAGE, 'utf8'), data));
+  console.log(`PAGE ${resolve(out)}`);
+} else if (cmd === 'serve') {
+  // A local site for working sessions: serves the page (yours, or the default one) with the current map and its
+  // figures, and reloads open browsers on every change of the map or the page. An invalid map keeps the last valid
+  // one on screen. Nothing is written; publish (or `page` / `embed`) when you choose.
+  const pg = arg('--page') ? resolve(arg('--page')) : DEFAULT_PAGE;
+  if (!existsSync(pg)) { console.error(`not found: ${pg}`); process.exit(2); }
+  const port = Number(arg('--port') || 4173);
+  let current = load(file), valid = current.errors.length ? null : current.data;
+  const clients = new Set();
+  const RELOAD = '<script>new EventSource("/events").onmessage=(e)=>{if(e.data==="reload")location.reload()}</script>';
+  let timer;
+  const changed = () => { clearTimeout(timer); timer = setTimeout(() => {
+    current = load(file); if (!current.errors.length) valid = current.data;
+    console.log(`${new Date().toLocaleTimeString()} ${current.errors.length ? 'INVALID (last valid map kept): ' + current.errors[0] : 'reloaded'}`);
+    for (const r of clients) r.write('data: reload\n\n');
+  }, 120); };
+  for (const f of new Set([file, pg])) watch(dirname(f), (_, name) => { if (!name || join(dirname(f), name) === f) changed(); });
+  const server = createServer((req, res) => {
+    if (req.url === '/events') {
+      res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+      res.write('data: hello\n\n'); clients.add(res); req.on('close', () => clients.delete(res)); return;
+    }
+    if (req.url === '/map.json') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(valid)); return; }
+    if (req.url === '/' || req.url.startsWith('/?')) {
+      if (!valid) { res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(`INVALID ${file}\n- ${current.errors.join('\n- ')}`); return; }
+      let html = embedIn(readFileSync(pg, 'utf8'), valid);
+      html = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, () => `${RELOAD}\n</body>`) : html + RELOAD;
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(html); return;
+    }
+    res.writeHead(404); res.end();
+  });
+  let tryPort = port;
+  server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE' && tryPort < port + 10) { tryPort += 1; server.listen(tryPort, '127.0.0.1'); }
+    else { console.error(`SERVE FAILED: ${e.message}`); process.exit(1); }
+  });
+  server.on('listening', () => console.log(`READY http://127.0.0.1:${tryPort}/  (map: ${file}, page: ${pg === DEFAULT_PAGE ? 'default' : pg})`));
+  server.listen(tryPort, '127.0.0.1');
 } else if (cmd === 'embed') {
   // The page carries the map (vsm-data) and its figures (vsm-summary) in two fixed tags: the page reads them,
   // and `import` takes the map back whatever the page looks like. Existing tags are replaced in place; new ones go
@@ -569,15 +640,7 @@ if (cmd === 'validate') {
   if (!pg || !existsSync(pg)) { console.error('--page <existing page.html> required'); process.exit(2); }
   const { data, errors } = load(file);
   if (errors.length) { console.error(`INVALID ${file}\n- ${errors.join('\n- ')}`); process.exit(1); }
-  let html = readFileSync(pg, 'utf8');
-  for (const [id, v] of [['vsm-data', data], ['vsm-summary', summarize(data)]]) {
-    const tag = jsonTag(id, v);
-    if (TAG(id).test(html)) html = html.replace(TAG(id), () => tag);
-    else if (/<script[\s>]/i.test(html)) html = html.replace(/<script[\s>]/i, (m) => `${tag}\n${m}`);
-    else if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, () => `${tag}\n</body>`);
-    else html += `\n${tag}\n`;
-  }
-  writeFileSync(pg, html);
+  writeFileSync(pg, embedIn(readFileSync(pg, 'utf8'), data));
   console.log(`EMBEDDED ${resolve(pg)} (vsm-data, vsm-summary)`);
 } else if (cmd === 'import') {
   // An exported page (or a copy of the published one) carries its map in <script id="vsm-data">: write it back as JSON.

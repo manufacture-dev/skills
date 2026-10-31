@@ -6,9 +6,13 @@ license: MIT
 
 # Value stream map
 
-A value stream map shows how one real piece of work travels from the request to production: the stages, the steps inside them, how long each step works and waits, what is sent back (rework), and where AI is used. The JSON file is the single source of truth. The page is written by you, from that file, in the design system you are given or one you choose; the CLI keeps the data valid and computes the figures, so every page shows the same numbers.
+A value stream map shows how one real piece of work travels from the request to production: the stages, the steps inside them, how long each step works and waits, what is sent back (rework), and where AI is used. The JSON file is the single source of truth. The page comes ready (a neutral default page), or you write it in the design system you are given; the CLI keeps the data valid and computes the figures, so every page shows the same numbers. It works with any coding agent that reads skills and runs commands (Claude Code, Codex, others), locally or published.
 
-CLI (Node 18+, no dependencies). Run it from the project, with the path to this skill's `scripts/vsm.mjs` (for example `node .claude/skills/value-stream-map/scripts/vsm.mjs outline map.json`); below, `scripts/vsm.mjs` stands for that path:
+## Requirements
+
+Node.js 18 or later; nothing else (no package to install). Before the first command, check `node --version`. If Node is missing or older, say so and give the install for the person's system: https://nodejs.org (LTS), `brew install node` (macOS), `winget install OpenJS.NodeJS.LTS` (Windows), the distribution's package (Linux). Do not work around it by editing the JSON and the figures by hand: the figures come from the CLI. The script stops with the same advice on an older Node.
+
+Run the CLI from the project, with the path to this skill's `scripts/vsm.mjs` (where the agent installed the skill: `.claude/skills/value-stream-map/` for Claude Code, `.agents/skills/value-stream-map/` for Codex, or another folder); below, `scripts/vsm.mjs` stands for that path:
 
 ```bash
 node scripts/vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"] [--trigger <text>] [--end <text>] [--team "<A>,<B>"]
@@ -20,13 +24,16 @@ node scripts/vsm.mjs detail   <map.json> --stage <id> --steps '<json array>' [--
 node scripts/vsm.mjs summary  <map.json> [--text]             # the figures a page shows (JSON by default)
 node scripts/vsm.mjs embed    <map.json> --page <page.html>   # put the map and its figures into the page
 node scripts/vsm.mjs import   <page.html> --output <map.json> # take the map back out of a page
+node scripts/vsm.mjs page     <map.json> --output <page.html> # the default page with the map in it: one file to open or host
+node scripts/vsm.mjs serve    <map.json> [--page <page.html>] [--port 4173]  # local site, reloads on every change
 ```
 
 ## Starting point
 
 - **From a page.** A map page carries its data: save the page as HTML and run `import`. A page with a "Continue this map" panel also lets you download or copy the data (paste it into a `.json` file, or into the conversation and ask the agent to save it).
 - **From scratch.** `node scripts/vsm.mjs new <map.json> --title "<the case>" --stages "Story,Refinement,Build,Review,QA,Release"` creates an empty map with your stages, in order. Without `--stages`, it starts from the starter stages (Request, Refinement, Build, Review, QA, Release), which the discussion then changes (see **Changing the stages**).
-- To share it, write the page (below) and publish it, for example as a Claude artifact. It is your own page; the one you started from stays as it was.
+- **Showing it while you work:** `serve` (long-running) gives a local address to open or share on screen; it reloads by itself on every change of the map or the page, with nothing to publish. Without a page of your own it uses the default page.
+- **Sharing it:** `page` writes one self-contained HTML file (the default page with the map in it) to open, send or host anywhere (an intranet, a static site); `embed` does the same for a page of your own. On Claude, it can be published as an artifact (declare the `downloads` capability). Publish at chosen moments (a break, the end of the session), not after every change: during the session, `serve` shows the changes. A published map is your own page; the one you started from stays as it was.
 
 ## Interviewing: you lead the session
 
@@ -34,7 +41,7 @@ You can run the session yourself, as the facilitator would: you ask, you record,
 
 **Two passes: the stream first, the detail after.** A map is worth what its steps are worth: the first goal is the whole stream, with as many steps as possible, from start to end. Detail (times, %C&A, AI, tools) comes in a second pass, theme by theme, over the whole map or one stage. Asking for every detail as each step comes up slows the flow of what people tell you and gets stuck on the first stage.
 
-1. **Frame the case**, one question at a time: the use case (one real, recent piece of work that reached production, not the process in general), what starts the work (trigger), when value is delivered (end), who takes part, then the stages: propose the ones given, or the starter stages, and ask what to rename, add, merge, remove or reorder. Then create the map already framed: `new <map.json> --title "<the case>" --trigger "…" --end "…" --team "…" --stages "…"`.
+1. **Frame the case**, one question at a time: the use case (one real, recent piece of work that reached production, not the process in general), what starts the work (trigger), when value is delivered (end), who takes part, then the stages: propose the ones given, or the starter stages, and ask what to rename, add, merge, remove or reorder. Then create the map already framed: `new <map.json> --title "<the case>" --trigger "…" --end "…" --team "…" --stages "…"`. Last framing question, optional: the look of the page, the default one or their organisation's design system (a link, a tokens or CSS file, a site to match); it can change any time, at publication included. Start `serve` and give the address, so the map shows up as it grows.
 2. **Build the stream** (pass `flow`, what `questions` gives while it is not built): stage by stage, the steps and who does each. Keep the person going with short prompts ("and then?", "who picks it up?", "is anything done in parallel?", "anything before that?"). Capture everything they say on the way (a wait, a time, an AI use, a rework, a pain) on its box: the detail is welcome, it is just not a prerequisite to go on. Now and then, add one detail question where it is worth most, as `questions --near <stage>` suggests (marked `optional`): the wait before a step that waits by nature (a review, a validation, a meeting, a release train), the AI use on a step that writes, codes or tests, or the time of a step that sounds long. One such question at a time, then back to the stream; if the answer is not known, move on.
 3. **Enrich it** (pass `enrich`, once the stream is there, or earlier when the person wants to): `questions --text` shows what is missing by theme (`wait`, `work`, `ai`, `rework`, `ca`, `who`, `tools`, `check`) with the number of boxes. Offer the choice in one line, from where the discussion is ("the stream has 24 steps; still missing: waits on 14, AI on 12, work on 9. Waits first, over the whole map or on Build?"). Then ask one theme at a time over a stage or the whole map, in one question covering several boxes (`questions --theme wait --stage build`, or `--near build` for that stage then its neighbours): "In Build, how long does it wait before the plan, the coding and the review?".
 4. **Record each answer** with one `patch` (smallest change, as below), and say in one line what you recorded. Record everything the answer brings, not only what you asked. When there is no answer ("we don't know", "no AI there", "nothing comes back"), add the keys of the boxes concerned to `asked` (`{"push": "asked", "value": "<key>"}`) so they are not asked again; an unknown value stays `null`.
@@ -114,9 +121,15 @@ Each op writes its own log line; add a `{"log"}` op saying who asked for it. Cha
 
 ## The page
 
-You write the page; there is no template. Use the design system you are told to use (its tokens, type, components), or choose a sober one that suits a working document. To redesign an existing map, write a new page from the same JSON in the new design system. When you update a map that already has a page, start from that page and keep its design unless asked to change it.
+Three ways, from the lightest:
 
-How the page gets its data: write the page so its script reads two JSON tags, `<script id="vsm-data" type="application/json">` (the map) and `<script id="vsm-summary" type="application/json">` (the figures), then run `embed`: it fills both, places them before the page's first script, and replaces them in place on the next run. Never type the data or the figures into the page by hand.
+- **The default page** (`assets/default-page.html`): neutral (system fonts, greys, one colour for wait and one for work), light and dark, FR/EN, and every layout rule below. `serve` and `page` use it when no page is given. Use it unless a look is asked for.
+- **The default page in the organisation's colours:** copy it next to the map and change only its tokens (the first `:root` blocks: colours, font, radius, light and dark), then `serve --page` or `embed` it. Enough for most "use our colours / our font".
+- **A page in a full design system** (the organisation's components, or a public one): you write it, from the layout rules below and the design system you are given (its tokens, type, components). Take the default page as the reference for what to show and how it behaves.
+
+When you update a map that already has a page, keep its design unless asked to change it. To redesign, write or restyle a page from the same JSON; the map does not change.
+
+How the page gets its data: a page reads two JSON tags, `<script id="vsm-data" type="application/json">` (the map) and `<script id="vsm-summary" type="application/json">` (the figures), then run `embed`: it fills both, places them before the page's first script, and replaces them in place on the next run. Never type the data or the figures into the page by hand.
 
 ### Layout (required, whatever the design system)
 
@@ -143,9 +156,9 @@ The design system decides colours, type, spacing and components. It never change
     - The legend explains every symbol used: the queue ▽, work time, %C&A and rolled %C&A, ↩ and ↻, batch, stacked boxes, dashed = to confirm, ~ estimate, felt, ? unknown, the timeline, lead time and flow efficiency, and that a stage's times are the sum of its boxes (Σ).
     - Latest changes: the last 8 `log` entries, newest first.
     - With a FR/EN switch, the page's own labels switch too, not only the map's texts.
-12. **Continue this map** (always, last section): how to carry on with this map. Three short steps: install the value-stream-map skill (link: https://github.com/manufacture-dev/value-stream-map), get this map's data, ask Claude to continue it. Then two buttons on the exact `vsm-data` content:
+12. **Continue this map** (always, last section): how to carry on with this map. Three short steps: install the value-stream-map skill (link: https://github.com/manufacture-dev/value-stream-map), get this map's data, ask an agent to continue it. Then two buttons on the exact `vsm-data` content:
     - **Copy the data**: `navigator.clipboard.writeText(json)` inside the click; if it fails, show the JSON in a read-only, selected text area so it can be copied by hand.
-    - **Download (JSON)**: shown only when the page runs as a Claude artifact that allows downloads: `const dl = window.claude && await window.claude.use('downloads')`; when `dl` is not null, `dl.save({filename: '<slug of case.title>.json', data: json})`. When publishing the page as an artifact, declare the `downloads` capability. Without it, show only Copy.
+    - **Download (JSON)**, as `<slug of case.title>.json`: in a Claude artifact (where `window.claude` exists), through `await window.claude.use('downloads')` and `dl.save({filename, data: json})`, shown only when that returns non-null (declare the `downloads` capability when publishing); anywhere else (a local file, `serve`, any web host), a plain download link on a Blob. The default page does both.
     A short status line says "Copied." or "Saved." after the action.
 
 What every page must show, from `vsm-data` and `vsm-summary` (never recompute a total, a share or an efficiency yourself; looking up which boxes are missing a time or which loops touch a box is fine):
@@ -163,7 +176,7 @@ What every page must show, from `vsm-data` and `vsm-summary` (never recompute a 
 
 Rules for the page:
 
-- It is one self-contained HTML page (it may load fonts or a library from a public CDN), in light and dark. On a phone the layout stays the same: the flow scrolls sideways in its container.
+- It is one self-contained HTML page (it may load fonts or a library from a public CDN, but the default page needs none, so it works offline), in light and dark. On a phone the layout stays the same: the flow scrolls sideways in its container.
 - Run `embed` after writing the page and again after every change to the map; `import` reads the map back from it.
 - Check the page against `summary` before sharing: same totals, every stage and loop present.
 - Show nothing the map does not hold: no invented figure, no extra comment on people.
