@@ -7,7 +7,7 @@ description: Use when a value stream map (a JSON map of a delivery flow, from id
 
 A value stream map shows how one real piece of work travels from the request to production: the stages, the steps inside them, how long each step works and waits, what is sent back (rework), and where AI is used. The JSON file is the single source of truth; a page is generated from it.
 
-CLI (Node 18+, no dependencies), from the folder that holds this skill:
+CLI (Node 18+, no dependencies). Run it from the project, with the path to this skill's `scripts/vsm.mjs` (for example `node .claude/skills/value-stream-map/scripts/vsm.mjs outline map.json`); below, `scripts/vsm.mjs` stands for that path:
 
 ```bash
 node scripts/vsm.mjs new      <map.json> --title <text> --stages "<Stage 1>,<Stage 2>,…"
@@ -36,7 +36,9 @@ Inputs are what people say or write: workshop notes, a pasted answer, a person d
 4. `patch` validates: if it refuses, nothing was written; fix the ops and send again.
 5. Say in one or two lines what changed, then what is still missing on the boxes you touched (a wait time, a work time, a %C&A) as a question to ask.
 
-When an input is ambiguous, make no edit and ask one short question. When an input contradicts the map, correct it and say so in the log.
+When an input is ambiguous, make no edit and ask one short question. When an input contradicts the map, correct it and say so in the log. When you choose between two boxes (a wait that could sit on either), say which one and why, in the log and in your reply.
+
+A frequency ("one release in five", "every feature") goes in the loop's `count`, in the words used with who said it; a new figure on an existing loop is added next to the old one, not over it, unless it corrects it. When the map has `i18n.fr`, add the French for each new text you write.
 
 `patch` ops: `{"set": "<path>", "value": …}`, `{"push": "<path>", "value": …}`, `{"insert": "<path>", "at": 0, "value": …}`, `{"del": "<path>"}`, `{"log": "text"}`, `{"detail": {"stage": "<id>", "steps": [...], "to": "<sub-step id>"}}`. A path is dot-separated; in a list a segment picks the item by `id` (or `name`, or an AI use's `label`, or an index): `stages.build.steps.claude-writes-code.work`, `stages.qa.steps.smoke-tests.ai`, `loops.refinement-meetings.count`, `hypotheses.H1.status`.
 
