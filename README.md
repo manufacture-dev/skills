@@ -16,6 +16,15 @@ Made by [Manufacture](https://manufacture.dev).
 
 Requires Node.js 18 or later (https://nodejs.org); nothing to install with npm. The agent checks it before the first command.
 
+**Which way?** Pick one, by agent:
+
+- **Claude Code:** the plugins, installed for you (the default scope), so the skills follow you in every project.
+- **Codex:** the plugin.
+- **Any other agent** (Cursor, GitHub Copilot and others): the skills CLI with `-g`, which installs for you rather than in the current project.
+- **In a repository** (`.claude/skills/`, `.agents/skills/`, or `npx skills add` without `-g`): only for a team that wants to pin one version for everybody, committed with the code. You then update it yourselves.
+
+Install each skill by **one way only** on a given agent: through two ways (the plugin and the skills CLI, say), the agent finds the skill twice and may load either copy, at different versions.
+
 **Claude Code** (all of them, or only those you want):
 
 ```
@@ -35,8 +44,8 @@ codex plugin add mf-value-stream-map@manufacture-skills
 **Any agent that reads skills** (Claude Code, Codex, Cursor, GitHub Copilot and others), with the [skills CLI](https://skills.sh):
 
 ```
-npx skills add manufacture-dev/skills                            # choose the skills and the agents
-npx skills add manufacture-dev/skills --skill mf-value-stream-map
+npx skills add manufacture-dev/skills -g                         # choose the skills and the agents
+npx skills add manufacture-dev/skills -g --skill mf-value-stream-map
 ```
 
 **By hand:** copy `plugins/<plugin>/skills/<skill>` where your agent looks for skills (`.agents/skills/` or `~/.agents/skills/` for Codex, `.claude/skills/` for Claude Code), then restart the agent.
