@@ -9,7 +9,7 @@
     {
       "name": "value-stream-map",
       "source": "./",
-      "description": "Continue and complete a value stream map with an agent; validate, preview, export, import.",
+      "description": "Continue and complete a value stream map with an agent; validate, figures, a page in any design system.",
       "version": "0.1.0",
       "category": "productivity"
     }

@@ -1,21 +1,16 @@
 #!/usr/bin/env node
-// Value stream map: validate, outline, edit, preview with live reload, export as a standalone page, import from one.
-// No dependencies, Node 18+. Usage:
+// Value stream map: create, validate, outline, edit, compute its figures, embed it in a page, import it from one.
+// The page itself is written by the agent, in whatever design system it is given (see SKILL.md). No dependencies, Node 18+.
+//   node vsm.mjs new      <map.json> --title <text> --stages "<Stage 1>,<Stage 2>,…" [--client <name>]
 //   node vsm.mjs validate <map.json>
 //   node vsm.mjs outline  <map.json>                       (compact view for an agent: ids and what each box holds)
 //   node vsm.mjs patch    <map.json> --ops '<json array>'  (apply changes, validate, write only if valid)
 //   node vsm.mjs detail   <map.json> --stage <id> --steps '<json>' [--to <sub-step id>]
-//   node vsm.mjs preview  <map.json> [--port 4173]         (local page that redraws at every save)
-//   node vsm.mjs export   <map.json> --output <page.html> [--force]
-//   node vsm.mjs import   <page.html> --output <map.json> [--force]   (take the map back out of an exported page)
-//   node vsm.mjs new      <map.json> --title <text> --stages "<Stage 1>,<Stage 2>,…" [--client <name>]   (an empty map)
-import { createServer } from 'node:http';
-import { readFileSync, writeFileSync, existsSync, watch, mkdirSync, rmSync, statSync, renameSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const HERE = dirname(fileURLToPath(import.meta.url));
-const VIEW = join(HERE, '..', 'assets', 'view.html');
+//   node vsm.mjs summary  <map.json> [--text]              (the figures a page shows: totals, per stage, gaps; JSON by default)
+//   node vsm.mjs embed    <map.json> --page <page.html>    (put the map's data into the page, replacing any previous copy)
+//   node vsm.mjs import   <page.html> --output <map.json> [--force]   (take the map back out of a page)
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, statSync, renameSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 export const MARKER_KINDS = ['accelerates', 'slows', 'bottleneck', 'new-bottleneck', 'pain', 'new-pain', 'duplicate', 'not-done'];
 export const AI_LEVELS = ['assistant', 'tooled', 'prepares', 'chains'];
@@ -129,13 +124,6 @@ function arg(name) {
   return i > -1 ? process.argv[i + 1] : undefined;
 }
 
-function page(view, dataJson, live) {
-  const title = (() => { try { return JSON.parse(dataJson).case.title; } catch { return 'Value stream map'; } })();
-  const inject = live
-    ? '<script>window.VSM_LIVE = true;</script>'
-    : `<script id="vsm-data" type="application/json">${dataJson.replace(/</g, '\\u003c')}</script>`;
-  return view.replace(/<!--VSM_TITLE-->/g, () => title.replace(/</g, '&lt;')).replace('<!--VSM_DATA-->', () => inject);
-}
 
 // Each change takes a lock, re-reads the latest map, applies its ops and writes, so two agents never overwrite
 // each other. A lock older than 10 s is stale.
@@ -184,9 +172,75 @@ function detailStage(data, stageId, steps, toId, at) {
   return `${st.id}: ${st.steps.map((x) => x.id).join(', ')}${moved.length ? ' · ' + moved.join(', ') : ''}${whole ? ' · whole-stage work in the log' : ''}`;
 }
 
+// The figures a page shows, computed once here so every page (whatever its design) shows the same numbers.
+// Times are in working days. A stage's times are its own when it has no sub-steps, else its sub-steps':
+// a group of parallel sub-steps (a sub-step marked parallel runs alongside the one before) counts once,
+// for its longest. Sub-steps with phase "upstream" are kept out of the totals and summed apart.
+function summarize(data) {
+  const stages = data.stages || [], loops = data.loops || [];
+  const groups = (list) => { const g = []; list.forEach((x) => { if (x.parallel && g.length) g[g.length - 1].push(x); else g.push([x]); }); return g; };
+  const maxOf = (g, k) => Math.max(0, ...g.map((x) => (x[k] ? x[k].days : 0)));
+  const inFlow = (x) => x.phase !== 'upstream';
+  const r1 = (v) => Math.round(v * 100) / 100;
+  const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : null);
+  const times = (s) => {
+    const st = (s.steps || []).filter(inFlow);
+    if (!st.length) return { work: s.work ? s.work.days : 0, wait: s.wait ? s.wait.days : 0 };
+    let w = 0, q = 0;
+    groups(st).forEach((g) => { w += maxOf(g, 'work'); q += maxOf(g, 'wait'); });
+    return { work: w, wait: q };
+  };
+  let work = 0, wait = 0;
+  const perStage = stages.map((s, i) => {
+    const t = times(s), st = (s.steps || []).filter(inFlow), lt = t.work + t.wait;
+    work += t.work; wait += t.wait;
+    const boxes = st.length ? st : [s];
+    return {
+      n: i + 1, id: s.id, name: s.name, status: s.status || 'assumed',
+      wait: r1(t.wait), work: r1(t.work), lead: r1(lt), efficiency: pct(t.work, lt),
+      boxes: boxes.length, withoutWork: boxes.filter((x) => !x.work).length, withoutWait: boxes.filter((x) => !x.wait).length,
+      reworkOut: loops.filter((l) => l.from === s.id && !(l.to === s.id && (l.toStep || '') === (l.fromStep || ''))).length,
+      iterations: loops.filter((l) => l.from === s.id && l.to === s.id && (l.toStep || '') === (l.fromStep || '')).length,
+      aiUses: (s.ai || []).length + st.reduce((m, x) => m + (x.ai || []).length, 0),
+    };
+  });
+  const lead = work + wait;
+  perStage.forEach((r) => { r.shareOfLead = pct(r.lead, lead); });
+  const longest = perStage.reduce((m, r) => (r.lead > (m ? m.lead : 0) ? r : m), null);
+  let uw = 0, uq = 0, un = 0;
+  stages.forEach((s) => groups((s.steps || []).filter((x) => !inFlow(x))).forEach((g) => { un += g.length; uw += maxOf(g, 'work'); uq += maxOf(g, 'wait'); }));
+  const cas = [];
+  stages.forEach((s) => ((s.steps || []).length ? s.steps : [s]).forEach((x) => { if (typeof x.ca === 'number') cas.push(x.ca); }));
+  const rolled = cas.length ? Math.round(cas.reduce((m, v) => (m * v) / 100, 1) * 100) : null;
+  const ai = {}; stages.forEach((s) => [s, ...(s.steps || [])].forEach((x) => (x.ai || []).forEach((a) => { ai[a.level] = (ai[a.level] || 0) + 1; })));
+  const markers = {}; stages.forEach((s) => [s, ...(s.steps || [])].forEach((x) => (x.markers || []).forEach((m) => { markers[m.kind] = (markers[m.kind] || 0) + 1; })));
+  const toConfirm = [];
+  stages.forEach((s) => [s, ...(s.steps || [])].forEach((x) => {
+    const where = x === s ? s.name : `${s.name} › ${x.name}`;
+    (x.ai || []).forEach((a) => a.confirm && toConfirm.push(`${where}: AI use "${a.label}"`));
+    (x.markers || []).forEach((m) => m.confirm && toConfirm.push(`${where}: ${m.kind} "${m.text}"`));
+  }));
+  loops.forEach((l) => l.confirm && toConfirm.push(`loop ${l.id || ''} ${l.from}${l.fromStep ? '/' + l.fromStep : ''} → ${l.to}${l.toStep ? '/' + l.toStep : ''}`));
+  return {
+    totals: { lead: r1(lead), work: r1(work), wait: r1(wait), flowEfficiency: pct(work, lead), rolledCA: rolled, caMeasuredBoxes: cas.length, note: (data.case || {}).leadNote || null },
+    upstream: un ? { boxes: un, work: r1(uw), wait: r1(uq), lead: r1(uw + uq) } : null,
+    stages: perStage, longestStage: longest ? longest.id : null,
+    counts: {
+      stages: stages.length, confirmed: stages.filter((s) => s.status === 'confirmed').length,
+      boxes: perStage.reduce((m, r) => m + r.boxes, 0), boxesWithoutWork: perStage.reduce((m, r) => m + r.withoutWork, 0), boxesWithoutWait: perStage.reduce((m, r) => m + r.withoutWait, 0),
+      loops: loops.length, aiByLevel: ai, markersByKind: markers, parking: (data.parking || []).length,
+      hypotheses: (data.hypotheses || []).reduce((m, h) => { m[h.status || 'open'] = (m[h.status || 'open'] || 0) + 1; return m; }, {}),
+    },
+    toConfirm,
+  };
+}
+
+const DATA_TAG = /<script id="vsm-data" type="application\/json">[\s\S]*?<\/script>/;
+const dataTag = (data) => `<script id="vsm-data" type="application/json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
+
 const [cmd, fileArg] = process.argv.slice(2);
 if (!cmd || !fileArg) {
-  console.error('usage: vsm.mjs <new|validate|outline|patch|detail|preview|export|import> <file> [--ops <json>] [--stage <id> --steps <json> [--to <id>]] [--port N] [--output <file>] [--force]');
+  console.error('usage: vsm.mjs <new|validate|outline|patch|detail|summary|embed|import> <file> [--ops <json>] [--stage <id> --steps <json> [--to <id>]] [--page <page.html>] [--output <file>] [--force] [--text]');
   process.exit(2);
 }
 const file = resolve(fileArg);
@@ -287,14 +341,29 @@ if (cmd === 'validate') {
     return 0;
   }); } catch (e) { console.error(`DETAIL FAILED: ${e.message}`); code = 1; }
   if (code) process.exit(code);
-} else if (cmd === 'export') {
-  const out = arg('--output');
-  if (!out) { console.error('--output required'); process.exit(2); }
-  if (existsSync(out) && !process.argv.includes('--force')) { console.error(`exists: ${out} (use --force)`); process.exit(1); }
+} else if (cmd === 'summary') {
   const { data, errors } = load(file);
   if (errors.length) { console.error(`INVALID ${file}\n- ${errors.join('\n- ')}`); process.exit(1); }
-  writeFileSync(out, page(readFileSync(VIEW, 'utf8'), JSON.stringify(data), false));
-  console.log(`EXPORTED ${resolve(out)}`);
+  const sm = summarize(data);
+  if (!process.argv.includes('--text')) { console.log(JSON.stringify(sm, null, 2)); process.exit(0); }
+  const t = sm.totals;
+  console.log(`lead ${t.lead} d = work ${t.work} + wait ${t.wait} · flow efficiency ${t.flowEfficiency ?? '—'} % · rolled C&A ${t.rolledCA ?? 'not measured'}${t.rolledCA !== null ? ' %' : ''} (${t.caMeasuredBoxes} boxes)`);
+  for (const r of sm.stages) console.log(`${r.n}. ${r.name} [${r.status}] wait ${r.wait} · work ${r.work} · lead ${r.lead} (${r.shareOfLead ?? 0} %) · ↩ ${r.reworkOut} ↻ ${r.iterations} · AI ${r.aiUses} · without work ${r.withoutWork}/${r.boxes}`);
+  if (sm.upstream) console.log(`upstream (outside the lead time): ${sm.upstream.boxes} boxes, ${sm.upstream.lead} d`);
+  console.log(`to confirm: ${sm.toConfirm.length}`);
+} else if (cmd === 'embed') {
+  // The page carries the map's data in one fixed tag, so `import` can take it back whatever the page looks like.
+  const pg = arg('--page');
+  if (!pg || !existsSync(pg)) { console.error('--page <existing page.html> required'); process.exit(2); }
+  const { data, errors } = load(file);
+  if (errors.length) { console.error(`INVALID ${file}\n- ${errors.join('\n- ')}`); process.exit(1); }
+  let html = readFileSync(pg, 'utf8');
+  const tag = dataTag(data);
+  if (DATA_TAG.test(html)) html = html.replace(DATA_TAG, () => tag);
+  else if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, () => `${tag}\n</body>`);
+  else html += `\n${tag}\n`;
+  writeFileSync(pg, html);
+  console.log(`EMBEDDED ${resolve(pg)}`);
 } else if (cmd === 'import') {
   // An exported page (or a copy of the published one) carries its map in <script id="vsm-data">: write it back as JSON.
   const out = arg('--output');
@@ -306,55 +375,6 @@ if (cmd === 'validate') {
   const errs = validate(data);
   writeAtomic(resolve(out), data);
   console.log(`IMPORTED ${resolve(out)}${errs.length ? ` (INVALID, fix before editing:\n- ${errs.join('\n- ')})` : ''}`);
-} else if (cmd === 'preview') {
-  const port = Number(arg('--port') || 4173);
-  const clients = new Set();
-  let last = load(file);
-  let lastValid = last.errors.length ? null : last.data;
-  const broadcast = () => { for (const res of clients) res.write('data: reload\n\n'); };
-  let timer;
-  watch(dirname(file), (_, name) => {
-    if (name && join(dirname(file), name) !== file) return;
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      last = load(file);
-      if (!last.errors.length) lastValid = last.data;
-      console.log(`${new Date().toLocaleTimeString()} ${last.errors.length ? 'INVALID: ' + last.errors[0] : 'reloaded'}`);
-      broadcast();
-    }, 120);
-  });
-  const server = createServer((req, res) => {
-    if (req.url === '/events') {
-      res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
-      res.write('data: hello\n\n');
-      clients.add(res);
-      req.on('close', () => clients.delete(res));
-      return;
-    }
-    if (req.url === '/data') {
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      res.end(JSON.stringify({ data: lastValid, errors: last.errors }));
-      return;
-    }
-    if (req.url === '/' || req.url.startsWith('/?')) {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-      res.end('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>'
-        + page(readFileSync(VIEW, 'utf8'), '{}', true) + '</body></html>');
-      return;
-    }
-    if (req.url === '/favicon.ico') { res.writeHead(204); res.end(); return; }
-    res.writeHead(404); res.end();
-  });
-  // Fall back to the next free port when another preview already runs.
-  let tryPort = port;
-  server.on('error', (e) => {
-    if (e.code === 'EADDRINUSE' && tryPort < port + 10) { tryPort += 1; server.listen(tryPort, '127.0.0.1'); }
-    else { console.error(`PREVIEW FAILED: ${e.message}`); process.exit(1); }
-  });
-  server.on('listening', () => console.log(`READY http://127.0.0.1:${tryPort}/  (source: ${file})`));
-  server.listen(tryPort, '127.0.0.1');
-  const stop = () => { for (const r of clients) r.write('data: ended\n\n'); setTimeout(() => { server.close(); process.exit(0); }, 300); };
-  process.on('SIGINT', stop); process.on('SIGTERM', stop);
 } else {
   console.error(`unknown command: ${cmd}`); process.exit(2);
 }

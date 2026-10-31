@@ -1,12 +1,12 @@
 ---
 name: value-stream-map
-description: Use when a value stream map of a delivery flow (from the request to production) must be created from scratch, continued, completed, corrected, validated, previewed or exported as a page: when someone wants to map how their work flows, describes or writes who does what, how long work waits, what comes back, where AI helps, pastes notes or answers from a workshop, or wants their own copy of a published map to keep working on.
+description: Use when a value stream map of a delivery flow (from the request to production) must be created from scratch, continued, completed, corrected or validated, or turned into a page in any design system (or redesigned in another one): when someone wants to map how their work flows, describes or writes who does what, how long work waits, what comes back, where AI helps, pastes notes or answers from a workshop, or wants to keep working on a map from a page they have.
 license: MIT
 ---
 
 # Value stream map
 
-A value stream map shows how one real piece of work travels from the request to production: the stages, the steps inside them, how long each step works and waits, what is sent back (rework), and where AI is used. The JSON file is the single source of truth; a page is generated from it.
+A value stream map shows how one real piece of work travels from the request to production: the stages, the steps inside them, how long each step works and waits, what is sent back (rework), and where AI is used. The JSON file is the single source of truth. The page is written by you, from that file, in the design system you are given or one you choose; the CLI keeps the data valid and computes the figures, so every page shows the same numbers.
 
 CLI (Node 18+, no dependencies). Run it from the project, with the path to this skill's `scripts/vsm.mjs` (for example `node .claude/skills/value-stream-map/scripts/vsm.mjs outline map.json`); below, `scripts/vsm.mjs` stands for that path:
 
@@ -16,16 +16,16 @@ node scripts/vsm.mjs validate <map.json>
 node scripts/vsm.mjs outline  <map.json>                      # compact view: ids and what each box holds
 node scripts/vsm.mjs patch    <map.json> --ops '<json array>' # apply changes, validate, write only if valid
 node scripts/vsm.mjs detail   <map.json> --stage <id> --steps '<json array>' [--to <sub-step id>]
-node scripts/vsm.mjs preview  <map.json>                      # local page, redraws at every save
-node scripts/vsm.mjs export   <map.json> --output <page.html> # standalone page with the map embedded
-node scripts/vsm.mjs import   <page.html> --output <map.json> # take the map back out of an exported page
+node scripts/vsm.mjs summary  <map.json> [--text]             # the figures a page shows (JSON by default)
+node scripts/vsm.mjs embed    <map.json> --page <page.html>   # put the map's data into the page
+node scripts/vsm.mjs import   <page.html> --output <map.json> # take the map back out of a page
 ```
 
 ## Starting point
 
-- **From a published map.** Open the map page and use "Continue this map": "Download (JSON)" saves the map data, "Copy the data" copies it (paste it into a `.json` file, or straight into the conversation and ask the agent to save it). A page saved as HTML works too: `import` takes the map out of it.
+- **From a page.** A map page carries its data: save the page as HTML and run `import`. A page with a "Continue this map" panel also lets you download or copy the data (paste it into a `.json` file, or into the conversation and ask the agent to save it).
 - **From scratch.** `node scripts/vsm.mjs new <map.json> --title "<the case>" --stages "Story,Refinement,Build,Review,QA,Release"` creates an empty map with your stages, in order.
-- To share your version, `export` it and publish the page (for example as a Claude artifact). It is your own page; the one you started from stays as it was.
+- To share it, write the page (below) and publish it, for example as a Claude artifact. It is your own page; the one you started from stays as it was.
 
 ## Building a map from scratch
 
@@ -84,7 +84,26 @@ A frequency ("one release in five", "every feature") goes in the loop's `count`,
 - Names may be cited in sources. Do not record anything personal, or that could harm someone.
 - Keep the map text in one language and validate before sharing.
 
-## Preview and publish
+## The page
 
-- `preview` serves the page on `http://127.0.0.1:4173/` (next free port if taken) and redraws at every valid save; keep it running while you edit.
-- `export` writes a standalone page (data embedded) ready to publish or send. The page has a macro view (stages) and a detailed view (sub-steps), a FR/EN switch, the rework list (click a box or a line to see its arrow), the totals (lead time, work, wait, flow efficiency, rolled %C&A) and what is still to complete.
+You write the page; there is no template. Use the design system you are told to use (its tokens, type, components), or choose a sober one that suits a working document. To redesign an existing map, write a new page from the same JSON in the new design system. When you update a map that already has a page, start from that page and keep its design unless asked to change it.
+
+What every page must show, from the map and from `summary` (never recompute the figures yourself):
+
+- **Header:** the case title, client, trigger → end, the team.
+- **Totals:** lead time = wait + work, work, wait, flow efficiency (work ÷ lead time), rolled %C&A (or "not measured"), and `totals.note` when present. Times are working days; show under 1 day in hours (1 day = 8 h).
+- **The flow:** the stages in order, each with its sub-steps as boxes in flow order; parallel sub-steps stacked or grouped so they read as simultaneous. On each box: name, who, tools, work time, %C&A, batch, AI uses with their level, markers by kind. A wait is drawn *before* the box that waits, as a queue between boxes. Estimates (`approx`), felt figures (`felt`) and unknown values (`null`, shown as "?") must be told apart, and everything marked `confirm` must look provisional (dashed, "to confirm").
+- **A macro view:** one box per stage with its totals, its rework counts (↩ sent back, ↻ iterations) and its batch; a toggle or a section is enough.
+- **Rework:** every loop with its ends (box → box), label, count, cost and source; an arrow or a clear link from the box that sends work back to the box that redoes it (arrows may appear on demand, e.g. on click).
+- **Per stage:** the `summary.stages` table (wait, work, lead time, share of lead time, efficiency, rework, AI uses, boxes without durations), with the longest stage highlighted.
+- **What is still to complete:** boxes without work or wait times, `toConfirm` items, stages still `assumed`.
+- **Hypotheses** with their status, **parking** ideas, and the latest `log` entries.
+- **A legend:** AI levels (assistant, tooled, prepares, chains), marker kinds, the symbols you use.
+- **Language:** the map's language; when the map has `i18n.fr`, offer a FR/EN switch using it.
+
+Rules for the page:
+
+- It is one self-contained HTML page (it may load fonts or a library from a public CDN), readable on a phone, in light and dark.
+- After writing it, run `embed` so the page carries the exact map data in `<script id="vsm-data" type="application/json">`; `import` reads it back. Run it again after every change to the map.
+- Check the page against `summary` before sharing: same totals, every stage and loop present.
+- Show nothing the map does not hold: no invented figure, no extra comment on people.
