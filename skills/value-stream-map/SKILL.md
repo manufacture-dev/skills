@@ -12,7 +12,7 @@ CLI (Node 18+, no dependencies). Run it from the project, with the path to this 
 
 ```bash
 node scripts/vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"] [--trigger <text>] [--end <text>] [--team "<A>,<B>"]
-node scripts/vsm.mjs questions <map.json> [--text] [--limit n] # what is still to ask, in interview order
+node scripts/vsm.mjs questions <map.json> [--text] [--theme <t>] [--stage <id>] [--near <id>] [--limit n] # what is still to ask
 node scripts/vsm.mjs validate <map.json>
 node scripts/vsm.mjs outline  <map.json>                      # compact view: ids and what each box holds
 node scripts/vsm.mjs patch    <map.json> --ops '<json array>' # apply changes, validate, write only if valid
@@ -30,25 +30,27 @@ node scripts/vsm.mjs import   <page.html> --output <map.json> # take the map bac
 
 ## Interviewing: you lead the session
 
-You can run the session yourself, as the facilitator would: you ask, you record, you ask the next question, and `questions` keeps the list of what is still to ask, so nothing is forgotten. Do this when a map is started from scratch, and whenever someone wants to continue a map without bringing their own notes.
+You can run the session yourself, as the facilitator would: you ask, you record, you ask the next question, and `questions` keeps what is still missing, so nothing is forgotten. Do this when a map is started from scratch, and whenever someone wants to continue a map without bringing their own notes.
 
-1. **Frame the case first**, one question at a time: the use case (one real, recent piece of work that reached production, not the process in general), what starts the work (trigger), when value is delivered (end), who takes part, then the stages: propose the ones given, or the starter stages, and ask what to rename, add, merge, remove or reorder. Then create the map already framed: `new <map.json> --title "<the case>" --trigger "…" --end "…" --team "…" --stages "…"`.
-2. **Then go round, staying with the discussion:** after each answer, run `questions --text --limit 3 --near <stage>[/<step>]` on the box just talked about: it puts first what is still missing on that box, then on its stage, its rework loops and the neighbouring stages. Pick the question that follows most naturally from what was just said (usually the first), and ask it in the person's language and in your own words, linked to their answer ("you said the review waits for a senior: how long, usually?"); never read the template. Move on to another part of the map only when nothing is left nearby or the person changes subject. Without `--near` the order is frame → flow, stage by stage (steps and who, work and wait times, then %C&A, AI, tools, what slows) → rework → read-back (what is still to confirm, hypotheses, ideas for later).
-3. **Record each answer** with one `patch` (smallest change, as below), then say in one line what you recorded and ask the next question. Record everything the answer brings, not only what you asked: it removes questions further down. When there is no answer ("we don't know", "no AI there", "nothing comes back"), add the question's key to `asked` (`{"push": "asked", "value": "<key>"}`) so it is not asked again; an unknown value stays `null`.
-4. **Everything can move along the way:** the use case, its start and end, the team and the stages. When an answer changes the frame ("actually it starts with the support ticket"), change it (`set` on `case.*`, `stage` ops), say so, and log who said it.
-5. **Follow the person** when they jump ahead or come back to an earlier box: record it where it belongs, then return to the first open question.
-6. Every few answers, or when asked, give the progress in one line: questions left by phase (`questions --text` prints them) and the lead time so far (`summary --text`).
-7. **Close** when `questions` has nothing left or the people stop: read the map back (`summary --text`): the stages and where work waits most, the rework, the AI uses, and what is still open. Then offer the page.
+**Two passes: the stream first, the detail after.** A map is worth what its steps are worth: the first goal is the whole stream, with as many steps as possible, from start to end. Detail (times, %C&A, AI, tools) comes in a second pass, theme by theme, over the whole map or one stage. Asking for every detail as each step comes up slows the flow of what people tell you and gets stuck on the first stage.
+
+1. **Frame the case**, one question at a time: the use case (one real, recent piece of work that reached production, not the process in general), what starts the work (trigger), when value is delivered (end), who takes part, then the stages: propose the ones given, or the starter stages, and ask what to rename, add, merge, remove or reorder. Then create the map already framed: `new <map.json> --title "<the case>" --trigger "…" --end "…" --team "…" --stages "…"`.
+2. **Build the stream** (pass `flow`, what `questions` gives while it is not built): stage by stage, the steps and who does each. Keep the person going with short prompts ("and then?", "who picks it up?", "is anything done in parallel?", "anything before that?") and ask nothing else. Whatever they say on the way (a wait, a time, an AI use, a rework, a pain) is recorded on its box, never chased.
+3. **Enrich it** (pass `enrich`, once the stream is there, or earlier when the person wants to): `questions --text` shows what is missing by theme (`wait`, `work`, `ai`, `rework`, `ca`, `who`, `tools`, `check`) with the number of boxes. Offer the choice in one line, from where the discussion is ("the stream has 24 steps; still missing: waits on 14, AI on 12, work on 9. Waits first, over the whole map or on Build?"). Then ask one theme at a time over a stage or the whole map, in one question covering several boxes (`questions --theme wait --stage build`, or `--near build` for that stage then its neighbours): "In Build, how long does it wait before the plan, the coding and the review?".
+4. **Record each answer** with one `patch` (smallest change, as below), and say in one line what you recorded. Record everything the answer brings, not only what you asked. When there is no answer ("we don't know", "no AI there", "nothing comes back"), add the keys of the boxes concerned to `asked` (`{"push": "asked", "value": "<key>"}`) so they are not asked again; an unknown value stays `null`.
+5. **Remind, do not drill.** Do not follow every input with a question on what it lacks. Bring up what is missing from time to time: when a stage is done, when the stream is complete, when the talk pauses, or when asked; then name the two or three themes with the most gaps and let the person choose. Ask your questions in the person's language and in your own words, linked to what was just said; never read the template.
+6. **Everything can move along the way:** the use case, its start and end, the team and the stages. When an answer changes the frame ("actually it starts with the support ticket"), change it (`set` on `case.*`, `stage` ops), say so, and log who said it.
+7. **Close** when the people stop, or nothing is left: read the map back (`summary --text`): the stages and where work waits most, the rework, the AI uses, and what is still open. Then offer the page.
 
 Ask one question at a time and record only what was said; never answer for the person. In a group workshop it works the same: the facilitator relays, or you ask the room.
 
 ## Live: listening to a call
 
-When the map is filled from a live transcript (a workshop recorded with Wispr Flow or another tool, driven by a live skill), the people talk to each other, not to you: never ask them anything yourself. The same mechanics serve the facilitator instead:
+When the map is filled from a live transcript (a workshop recorded with Wispr Flow or another tool, driven by a live skill), the people talk to each other, not to you: never ask them anything yourself. The same two passes serve the facilitator instead:
 
 - Each batch of transcript is an input like any other (below): record what was said, on the box it concerns.
-- Then run `questions --near <stage or box being discussed>` and turn the first one or two into **suggestions for the facilitator**, phrased from what was just said, through whatever the live tool shows them (a coach page, a reply line). Never more than three at a time, and none while the group is in the middle of answering.
-- A question counts as answered only when the transcript answers it; add its key to `asked` only when the group says they do not know or that it does not apply.
+- While the stream is being built, suggest only what keeps it going (the next step, who does it, a stage not covered yet). Once it is built, or when the talk stalls, suggest a theme to go over (`questions --text`, then `--theme` / `--near <stage being discussed>`), phrased from what was just said, through whatever the live tool shows the facilitator (a coach page, a reply line). One to three suggestions at a time, none while the group is answering, and not after every batch.
+- A question counts as answered only when the transcript answers it; add a key to `asked` only when the group says they do not know or that it does not apply.
 - Frame and stages change live the same way (`set` on `case.*`, `stage` ops), when the group says so out loud.
 - Extra fields a live tool keeps in the map (a roster, its own question list, a `now` state, private notes, `stages[].checked`) are kept as they are: `validate`, `patch` and `summary` ignore them, and `questions` treats `checked.steps` / `checked.loops` as already asked. Never show them on the page.
 
@@ -60,7 +62,7 @@ Whether the map is new or existing, inputs are what people say or write: worksho
 2. Decide what the input changes: a stage (added, renamed, moved, merged), a sub-step, who does it, a tool, a wait or work time, an AI use, a marker, a rework loop, a %C&A, an idea for later, a hypothesis status.
 3. Make the smallest change with one `patch` call holding every change, plus one `{"log": "…"}` op saying what changed and from whom. Keep existing ids and order.
 4. `patch` validates: if it refuses, nothing was written; fix the ops and send again.
-5. Say in one or two lines what changed, then suggest how to complete it: run `questions --text --limit 3 --near <box you touched>` and offer one or two of them as questions, linked to the input ("the notes give QA's bugs but not how long they wait for a fix: do you know?"). Do not list every gap: keep to what follows from what was just said.
+5. Say in one or two lines what changed. Do not follow each input with questions: from time to time (a stage finished, the stream complete, or when asked), say what is missing by theme (`questions --text`) and offer to go over one, linked to what was just said ("the notes cover QA well but no waits yet: shall we go over the waits of QA?").
 
 When an input is ambiguous, make no edit and ask one short question. When an input contradicts the map, correct it and say so in the log. When you choose between two boxes (a wait that could sit on either), say which one and why, in the log and in your reply.
 
@@ -96,7 +98,7 @@ Each op writes its own log line; add a `{"log"}` op saying who asked for it. Cha
 - `confirm: true` on an AI use, a marker or a loop you inferred rather than heard: the page shows it dashed, "to confirm".
 - `parking[]`: `{text, who}` ideas for the future flow. Record them; they never go into the stages.
 - `hypotheses[]`: `{id, text, status}`, status `open`, `confirmed`, `refuted` or `partial`. The status changes only when the people concerned say so.
-- `asked[]` (optional): keys of questions from `questions` that were asked and got no answer, so they are not asked again.
+- `asked[]` (optional): keys from `questions` (one per box and theme, e.g. `build/coding:wait`) that were asked and got no answer, so they are not asked again.
 - `log[]`: `{at, text}`, one entry per meaningful change, shown under the map as the latest changes.
 - `i18n.fr` (optional): French text for each English text of the map, used by the page's FR/EN switch. A text without a translation shows in English in both.
 

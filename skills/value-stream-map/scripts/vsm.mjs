@@ -256,59 +256,68 @@ function stageOp(data, op, at) {
   return text;
 }
 
-// What is still to ask, in the order of an interview: frame the case (use case, trigger, end, team, stages), then
-// stage by stage in flow order (steps, who, work, wait, tools, %C&A, AI, what slows), then rework, then the
-// read-back (stages and items to confirm, hypotheses, ideas for later). Each question has a stable key; a key in
-// data.asked was asked and got no answer ("we don't know", "no AI there"), so it is not asked again.
+// What is still to ask, in two passes. Pass "flow" builds the stream first: the frame (use case, trigger, end,
+// team, stages) and the steps of every stage; nothing else is asked, so the stream gets as many steps as possible
+// before any detail. Pass "enrich" comes once the flow is there: one question per theme and stage, covering every
+// box still missing it (waits, work times, AI uses, rework, %C&A, who, tools, then what is still to confirm), for
+// the whole map or one stage. Each box keeps its own key; a key in data.asked was asked and got no answer
+// ("we don't know", "no AI there"), so it is not asked again.
+export const THEMES = ['wait', 'work', 'ai', 'rework', 'ca', 'who', 'tools', 'check'];
 function questionsFor(data) {
-  const asked = new Set(data.asked || []), out = [];
-  const q = (key, phase, text, at = {}) => { if (!asked.has(key)) out.push({ key, phase, ...at, question: text }); };
+  const asked = new Set(data.asked || []);
   const c = data.case || {}, stages = data.stages || [], loops = data.loops || [];
   const empty = (v) => v == null || v === '' || (Array.isArray(v) && !v.length);
-  if (empty(c.title)) q('case:title', 'frame', 'Which real piece of work do we follow, from the request to production (a recent one that reached production)?');
-  if (empty(c.trigger)) q('case:trigger', 'frame', 'What starts the work on it: the request, the event or the decision?');
-  if (empty(c.end)) q('case:end', 'frame', 'When is the value delivered: what tells you it is done?');
-  if (empty(c.team)) q('case:team', 'frame', 'Who takes part, from the request to production (roles)?');
+  const flow = [], enrich = [];
+  const one = (key, theme, question, at = {}) => { if (!asked.has(key)) flow.push({ pass: 'flow', theme, key, ...at, question }); };
+  if (empty(c.title)) one('case:title', 'frame', 'Which real piece of work do we follow, from the request to production (a recent one that reached production)?');
+  if (empty(c.trigger)) one('case:trigger', 'frame', 'What starts the work on it: the request, the event or the decision?');
+  if (empty(c.end)) one('case:end', 'frame', 'When is the value delivered: what tells you it is done?');
+  if (empty(c.team)) one('case:team', 'frame', 'Who takes part, from the request to production (roles)?');
   const started = stages.some((s) => s.status === 'confirmed' || (s.steps || []).length || s.work || s.wait);
-  if (!started) q('case:stages', 'frame', `Between that start and that end, are these the stages, in this order: ${stages.map((s) => s.name).join(' → ')}? Any to add, rename, merge or remove?`);
+  if (!started) one('case:stages', 'frame', `Between that start and that end, are these the stages, in this order: ${stages.map((s) => s.name).join(' → ')}? Any to add, rename, merge or remove?`);
+  // checked {steps, loops}: set by a live tool once the question was asked for that stage (answered or not).
+  stages.forEach((s) => { if (!(s.steps || []).length && !(s.checked || {}).steps) one(`${s.id}:steps`, 'steps', `What happens in ${s.name}, step by step, and who does each step?`, { stage: s.id }); });
+  // Enrich: per stage and theme, the boxes still missing it. A parallel box shares the queue of the one it runs
+  // alongside (no wait asked); the very first box of the stream receives nothing (no %C&A asked).
+  const group = (theme, stage, boxes, question) => { const b = boxes.filter((x) => !asked.has(x.key)); if (b.length) enrich.push({ pass: 'enrich', theme, stage: stage.id, boxes: b, question: question(b) }); };
+  const names = (b) => b.map((x) => x.name).join('; ');
   stages.forEach((s, si) => {
-    const at = { stage: s.id };
-    const steps = (s.steps || []).filter((x) => x.phase !== 'upstream');
-    // checked {steps, loops}: set by a live tool once the question was asked for that stage (answered or not).
-    if (!(s.steps || []).length && !(s.checked || {}).steps) q(`${s.id}:steps`, 'flow', `What happens in ${s.name}, step by step, and who does each step?`, at);
-    // In a stage, first who does each box and its times, then what it receives (%C&A), its AI uses and tools.
-    // A parallel box shares the queue of the one it runs alongside: its wait is not asked.
-    const boxes = (steps.length ? steps : [s]).map((x, bi) => ({ x, first: si === 0 && bi === 0,
-      box: x === s ? s.name : `${x.name} (${s.name})`, k: x === s ? `${s.id}` : `${s.id}/${x.id}`, a: x === s ? at : { ...at, step: x.id } }));
-    for (const { x, box, k, a } of boxes) {
-      if (empty(x === s ? s.actors : x.who)) q(`${k}:who`, 'flow', `Who does ${box}?`, a);
-      if (!x.work) q(`${k}:work`, 'flow', `How long does ${box} take when someone works on it (working time, not elapsed)?`, a);
-      if (!x.wait && !x.parallel) q(`${k}:wait`, 'flow', `How long does the work wait before ${box} starts?`, a);
-    }
-    for (const { x, first, box, k, a } of boxes) {
-      if (!first && x.ca === undefined) q(`${k}:ca`, 'flow', `Of what ${box} receives, how much can be used as is, without going back (%)?`, a);
-      if (empty(x.ai)) q(`${k}:ai`, 'flow', `Is AI used in ${box}? For what, and who checks what it produces?`, a);
-      if (empty(x.tools)) q(`${k}:tools`, 'flow', `Which tools are used for ${box}?`, a);
-    }
-    if (![s, ...(s.steps || [])].some((x) => (x.markers || []).length)) q(`${s.id}:markers`, 'flow', `In ${s.name}, what slows the work down, hurts, is done twice, or got faster?`, at);
+    const inner = (s.steps || []).filter((x) => x.phase !== 'upstream');
+    const boxes = (inner.length ? inner : [s]).map((x, bi) => ({ x, first: si === 0 && bi === 0, k: x === s ? s.id : `${s.id}/${x.id}`, step: x === s ? null : x.id, name: x.name }));
+    const pick = (theme, test) => boxes.filter(test).map((b) => ({ step: b.step, key: `${b.k}:${theme}`, name: b.name }));
+    group('wait', s, pick('wait', (b) => !b.x.wait && !b.x.parallel), (b) => `In ${s.name}, how long does the work wait before it starts on: ${names(b)}?`);
+    group('work', s, pick('work', (b) => !b.x.work), (b) => `In ${s.name}, how long does each take when someone works on it (working time, not elapsed): ${names(b)}?`);
+    group('ai', s, pick('ai', (b) => empty(b.x.ai)), (b) => `In ${s.name}, is AI used for: ${names(b)}? For what, and who checks what it produces?`);
+    const marks = [s, ...(s.steps || [])].some((x) => (x.markers || []).length);
+    const back = loops.some((l) => l.from === s.id || l.to === s.id) || (s.checked || {}).loops;
+    group('rework', s, [...(back ? [] : [{ step: null, key: `${s.id}:loops`, name: 'what comes back' }]), ...(marks ? [] : [{ step: null, key: `${s.id}:markers`, name: 'what slows or hurts' }])],
+      () => `In ${s.name}, what comes back for rework (from where, how often, at what cost), and what slows the work down or hurts?`);
+    group('ca', s, pick('ca', (b) => !b.first && b.x.ca === undefined), (b) => `In ${s.name}, of what each receives, how much can be used as is, without going back (%): ${names(b)}?`);
+    group('who', s, pick('who', (b) => empty(b.x === s ? s.actors : b.x.who)), (b) => `In ${s.name}, who does: ${names(b)}?`);
+    group('tools', s, pick('tools', (b) => empty(b.x.tools)), (b) => `In ${s.name}, which tools are used for: ${names(b)}?`);
   });
-  if (!loops.length && !stages.some((s) => (s.checked || {}).loops)) q('case:loops', 'rework', 'What comes back for rework, from which step to which, how often and at what cost?');
   loops.forEach((l) => {
-    const at = { loop: l.id || null };
-    if (empty(l.count)) q(`loop:${l.id}:count`, 'rework', `How often does "${l.label || l.id}" happen?`, at);
-    if (!l.cost) q(`loop:${l.id}:cost`, 'rework', `What does one round of "${l.label || l.id}" cost in time?`, at);
+    const b = [...(empty(l.count) ? [{ key: `loop:${l.id}:count`, name: 'how often' }] : []), ...(!l.cost ? [{ key: `loop:${l.id}:cost`, name: 'cost of one round' }] : [])];
+    const st = stages.find((x) => x.id === l.from) || { id: l.from };
+    group('rework', st, b.map((x) => ({ ...x, loop: l.id })), (bb) => `"${l.label || l.id}": ${bb.map((x) => x.name).join(' and ')}?`);
   });
-  stages.forEach((s) => s.status !== 'confirmed' && q(`${s.id}:confirm`, 'check', `Is ${s.name} as on the map what really happened on this case?`, { stage: s.id }));
-  stages.forEach((s) => [s, ...(s.steps || [])].forEach((x) => {
-    const a = x === s ? { stage: s.id } : { stage: s.id, step: x.id }, k = x === s ? s.id : `${s.id}/${x.id}`;
-    if (x !== s && x.status === 'assumed') q(`${k}:confirm`, 'check', `Does "${x.name}" really happen on this case?`, a);
-    (x.ai || []).forEach((u) => u.confirm && q(`${k}:ai:${u.label}`, 'check', `Confirm the AI use "${u.label}"?`, a));
-    (x.markers || []).forEach((m) => m.confirm && q(`${k}:marker:${m.text}`, 'check', `Confirm "${m.text}" (${m.kind})?`, a));
-  }));
-  loops.forEach((l) => l.confirm && q(`loop:${l.id}:confirm`, 'check', `Confirm the rework "${l.label || l.id}"?`, { loop: l.id || null }));
-  (data.hypotheses || []).forEach((h) => (h.status || 'open') === 'open' && q(`hypothesis:${h.id}`, 'check', `Does what was said confirm or refute: "${h.text}"?`, { hypothesis: h.id }));
-  if (!(data.parking || []).length) q('case:parking', 'check', 'Any idea for doing it differently, to note for later?');
-  return out;
+  stages.forEach((s) => {
+    const b = [];
+    if (s.status !== 'confirmed') b.push({ step: null, key: `${s.id}:confirm`, name: s.name });
+    [s, ...(s.steps || [])].forEach((x) => {
+      const k = x === s ? s.id : `${s.id}/${x.id}`, step = x === s ? null : x.id;
+      if (x !== s && x.status === 'assumed') b.push({ step, key: `${k}:confirm`, name: x.name });
+      (x.ai || []).forEach((u) => u.confirm && b.push({ step, key: `${k}:ai:${u.label}`, name: `AI: ${u.label}` }));
+      (x.markers || []).forEach((m) => m.confirm && b.push({ step, key: `${k}:marker:${m.text}`, name: `${m.kind}: ${m.text}` }));
+    });
+    loops.forEach((l) => l.confirm && l.from === s.id && b.push({ loop: l.id, key: `loop:${l.id}:confirm`, name: `rework: ${l.label || l.id}` }));
+    group('check', s, b, (bb) => `In ${s.name}, is this what really happened on this case: ${names(bb)}?`);
+  });
+  const hyp = (data.hypotheses || []).filter((h) => (h.status || 'open') === 'open' && !asked.has(`hypothesis:${h.id}`));
+  if (hyp.length) enrich.push({ pass: 'enrich', theme: 'check', stage: null, boxes: hyp.map((h) => ({ key: `hypothesis:${h.id}`, name: h.text })), question: `Does what was said confirm or refute: ${hyp.map((h) => `"${h.text}"`).join('; ')}?` });
+  if (!(data.parking || []).length && !asked.has('case:parking')) enrich.push({ pass: 'enrich', theme: 'check', stage: null, boxes: [{ key: 'case:parking', name: 'ideas for later' }], question: 'Any idea for doing it differently, to note for later?' });
+  enrich.sort((a, b) => THEMES.indexOf(a.theme) - THEMES.indexOf(b.theme));
+  return { flow, enrich };
 }
 
 // The figures a page shows, computed once here so every page (whatever its design) shows the same numbers.
@@ -502,30 +511,31 @@ if (cmd === 'validate') {
   }); } catch (e) { console.error(`DETAIL FAILED: ${e.message}`); code = 1; }
   if (code) process.exit(code);
 } else if (cmd === 'questions') {
+  // --pass flow|enrich (default: flow while the stream is not built, then enrich) · --theme <theme> · --stage <id>
+  // (one stage) · --near <id> (that stage first, then its neighbours) · --limit n · --text.
   const { data } = load(file);
   if (!data) process.exit(1);
-  // --near: the questions on the box just discussed first, then the rest of its stage, then its loops, then the
-  // neighbouring stages, then everything else in interview order; the conversation stays on what was just said.
-  let all = questionsFor(data);
-  const near = arg('--near');
-  if (near) {
-    const [ns, nx] = near.split('/'), order = (data.stages || []).map((x) => x.id), ni = order.indexOf(ns);
-    const rank = (x) => {
-      if (x.stage === ns && (nx ? x.step === nx : !x.step)) return 0;
-      if (x.stage === ns) return 1;
-      const l = (data.loops || []).find((y) => x.loop && y.id === x.loop);
-      if (l && (l.from === ns || l.to === ns) && (!nx || l.fromStep === nx || l.toStep === nx)) return 2;
-      if (x.stage && ni >= 0 && Math.abs(order.indexOf(x.stage) - ni) === 1) return 3;
-      return 4;
-    };
-    all = all.map((x, i) => ({ x, i, r: rank(x) })).sort((a, b) => a.r - b.r || a.i - b.i).map((y) => y.x);
+  const { flow, enrich } = questionsFor(data);
+  // Asking for a theme or a stage (enrich it now) is allowed before the whole stream is built.
+  const flowHere = arg('--stage') ? flow.filter((x) => x.stage === arg('--stage')) : flow;
+  const pass = arg('--pass') || (arg('--theme') || !flowHere.length ? 'enrich' : 'flow');
+  let list = pass === 'flow' ? flow : enrich;
+  if (arg('--theme')) list = list.filter((x) => x.theme === arg('--theme'));
+  if (arg('--stage')) list = list.filter((x) => x.stage === arg('--stage'));
+  if (arg('--near')) {
+    const order = (data.stages || []).map((x) => x.id), ni = order.indexOf(arg('--near').split('/')[0]);
+    const d = (x) => (x.stage && ni >= 0 ? Math.abs(order.indexOf(x.stage) - ni) : 99);
+    list = list.map((x, i) => ({ x, i })).sort((a, b) => d(a.x) - d(b.x) || a.i - b.i).map((y) => y.x);
   }
-  const n = Number(arg('--limit')) || (process.argv.includes('--text') ? 5 : all.length);
+  const count = (l) => THEMES.map((t) => [t, l.filter((x) => x.theme === t).reduce((m, x) => m + x.boxes.length, 0)]).filter((x) => x[1]);
+  const left = { flow: flow.length, enrich: Object.fromEntries(count(enrich)) };
+  const n = Number(arg('--limit')) || (process.argv.includes('--text') ? 3 : list.length);
   if (process.argv.includes('--text')) {
-    if (!all.length) console.log('Nothing left to ask: read the map back with the people.');
-    all.slice(0, n).forEach((x) => console.log(`[${x.phase}] ${x.key} · ${x.question}`));
-    if (all.length > n) console.log(`… ${all.length - n} more (all remaining: ${['frame', 'flow', 'rework', 'check'].map((p) => `${p} ${all.filter((x) => x.phase === p).length}`).join(', ')})`);
-  } else console.log(JSON.stringify({ remaining: all.length, questions: all.slice(0, n) }, null, 2));
+    const toEnrich = count(enrich).map(([t, v]) => `${t} ${v}`).join(', ') || 'nothing';
+    console.log(flow.length ? `stream not built yet: ${flow.length} question(s) (frame, steps) · to enrich later: ${toEnrich} (boxes)` : `stream built · to enrich: ${toEnrich} (boxes)`);
+    list.slice(0, n).forEach((x) => console.log(`[${x.theme}]${x.stage ? ' ' + x.stage : ''}${x.boxes ? ` (${x.boxes.length})` : ''} · ${x.question}`));
+    if (list.length > n) console.log(`… ${list.length - n} more`);
+  } else console.log(JSON.stringify({ pass, left, questions: list.slice(0, n) }, null, 2));
 } else if (cmd === 'summary') {
   const { data, errors } = load(file);
   if (errors.length) { console.error(`INVALID ${file}\n- ${errors.join('\n- ')}`); process.exit(1); }
