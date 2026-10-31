@@ -1,0 +1,684 @@
+{
+  "case": {
+    "client": "Lumen Insights (fictional)",
+    "title": "Scheduled report exports: from customer request to production",
+    "trigger": "Customers ask for reports sent automatically as CSV or PDF (Product)",
+    "end": "Scheduled exports live in production and announced to customers (Product)",
+    "team": [
+      "Product · Ana",
+      "Design · Leo",
+      "Dev lead · Sam",
+      "Backend dev · Noor",
+      "Frontend dev · Kai",
+      "QA · Mia",
+      "DevOps · Tom",
+      "Security · Ines"
+    ],
+    "stages": [
+      "discovery",
+      "specification",
+      "refinement",
+      "planning",
+      "build",
+      "review",
+      "qa",
+      "release"
+    ]
+  },
+  "stages": [
+    {
+      "id": "discovery",
+      "name": "Discovery",
+      "status": "confirmed",
+      "steps": [
+        {
+          "id": "customer-asks",
+          "name": "Customer requests collected from support tickets and account reviews",
+          "who": "Product",
+          "status": "confirmed",
+          "work": {
+            "days": 1,
+            "approx": true,
+            "text": "about a day",
+            "source": "Product, felt"
+          },
+          "wait": null,
+          "ai": [
+            {
+              "label": "Claude clusters the tickets by theme",
+              "level": "assistant",
+              "who": "Product"
+            }
+          ],
+          "markers": [],
+          "tools": "Zendesk, Notion"
+        },
+        {
+          "id": "usage-check",
+          "name": "Usage data checked: who exports reports today and how",
+          "who": "Product, Data",
+          "status": "confirmed",
+          "work": {
+            "days": 0.5,
+            "source": "Data"
+          },
+          "wait": {
+            "days": 2,
+            "approx": true,
+            "text": "2 days, waiting for a data extract",
+            "source": "Product"
+          },
+          "ai": [],
+          "markers": [
+            {
+              "kind": "slows",
+              "text": "Data extracts are requested by ticket to the data team",
+              "source": "Product"
+            }
+          ],
+          "tools": "Metabase"
+        },
+        {
+          "id": "problem-brief",
+          "name": "Problem brief written and shared",
+          "who": "Product",
+          "status": "confirmed",
+          "work": {
+            "days": 0.5
+          },
+          "wait": null,
+          "ai": [
+            {
+              "label": "Claude drafts the brief from the clustered tickets",
+              "level": "prepares",
+              "who": "Product"
+            }
+          ],
+          "markers": [],
+          "tools": "Notion"
+        }
+      ]
+    },
+    {
+      "id": "specification",
+      "name": "Specification",
+      "status": "confirmed",
+      "steps": [
+        {
+          "id": "user-stories",
+          "name": "User stories and acceptance criteria",
+          "who": "Product",
+          "status": "confirmed",
+          "work": {
+            "days": 2,
+            "approx": true,
+            "source": "Product"
+          },
+          "wait": {
+            "days": 3,
+            "approx": true,
+            "text": "about 3 days, the PO is on other topics",
+            "source": "Product, felt",
+            "felt": true
+          },
+          "ai": [
+            {
+              "label": "Claude proposes acceptance criteria from the brief",
+              "level": "prepares",
+              "who": "Product"
+            }
+          ],
+          "markers": [],
+          "tools": "Jira",
+          "ca": 70,
+          "caApprox": true,
+          "caSource": "Product"
+        },
+        {
+          "id": "ux-mockups",
+          "name": "Mock-ups of the export dialog",
+          "who": "Design",
+          "status": "confirmed",
+          "work": {
+            "days": 1.5
+          },
+          "wait": null,
+          "ai": [],
+          "markers": [],
+          "tools": "Figma",
+          "parallel": true
+        },
+        {
+          "id": "security-check",
+          "name": "Data access rules for scheduled exports",
+          "who": "Security",
+          "status": "confirmed",
+          "work": {
+            "days": 0.5
+          },
+          "wait": {
+            "days": 4,
+            "text": "4 days, waiting for the security review slot",
+            "source": "Security"
+          },
+          "ai": [],
+          "markers": [
+            {
+              "kind": "bottleneck",
+              "text": "One security reviewer for all teams, weekly slot",
+              "source": "Security"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "refinement",
+      "name": "Refinement",
+      "status": "confirmed",
+      "steps": [
+        {
+          "id": "refinement-meeting",
+          "name": "Refinement meeting with dev and QA",
+          "who": "Team",
+          "status": "confirmed",
+          "work": {
+            "days": 0.25,
+            "text": "2 hours"
+          },
+          "wait": {
+            "days": 4,
+            "approx": true,
+            "text": "up to a week, next refinement session",
+            "source": "Dev lead"
+          },
+          "ai": [],
+          "markers": [],
+          "tools": "Jira",
+          "batch": "weekly session"
+        },
+        {
+          "id": "technical-notes",
+          "name": "Technical notes on the report engine",
+          "who": "Dev lead",
+          "status": "confirmed",
+          "work": {
+            "days": 1
+          },
+          "wait": null,
+          "ai": [
+            {
+              "label": "Claude reads the report engine and lists the impacted modules",
+              "level": "assistant",
+              "who": "Dev lead"
+            }
+          ],
+          "markers": [],
+          "tools": "Notion"
+        }
+      ]
+    },
+    {
+      "id": "planning",
+      "name": "Sprint planning",
+      "status": "confirmed",
+      "steps": [
+        {
+          "id": "estimate",
+          "name": "Estimation in story points",
+          "who": "Team",
+          "status": "confirmed",
+          "work": {
+            "days": 0.125,
+            "text": "1 hour"
+          },
+          "wait": null,
+          "ai": [],
+          "markers": [],
+          "tools": "Jira"
+        },
+        {
+          "id": "sprint-commit",
+          "name": "Committed to the next sprint",
+          "who": "Team",
+          "status": "confirmed",
+          "work": {
+            "days": 0.125
+          },
+          "wait": {
+            "days": 5,
+            "approx": true,
+            "text": "up to 2 weeks, the current sprint must end",
+            "source": "Dev lead"
+          },
+          "ai": [],
+          "markers": [
+            {
+              "kind": "slows",
+              "text": "Ready stories wait for the next sprint",
+              "source": "Dev lead"
+            }
+          ],
+          "tools": "Jira",
+          "batch": "2-week sprint"
+        }
+      ]
+    },
+    {
+      "id": "build",
+      "name": "Build",
+      "status": "confirmed",
+      "steps": [
+        {
+          "id": "api-export",
+          "name": "Export API and scheduler",
+          "who": "Backend dev",
+          "status": "confirmed",
+          "work": {
+            "days": 4,
+            "approx": true,
+            "source": "Backend dev"
+          },
+          "wait": {
+            "days": 0.5
+          },
+          "ai": [
+            {
+              "label": "Claude Code writes the scheduler and its tests from the technical notes",
+              "level": "prepares",
+              "who": "Backend dev"
+            }
+          ],
+          "markers": [
+            {
+              "kind": "accelerates",
+              "text": "Scheduler written in two days instead of a week",
+              "source": "Backend dev"
+            }
+          ],
+          "tools": "Python, Celery",
+          "ca": 80,
+          "caSource": "Backend dev"
+        },
+        {
+          "id": "ui-dialog",
+          "name": "Export dialog in the web app",
+          "who": "Frontend dev",
+          "status": "confirmed",
+          "work": {
+            "days": 2
+          },
+          "wait": null,
+          "ai": [
+            {
+              "label": "Claude Code builds the dialog from the Figma mock-ups",
+              "level": "prepares",
+              "who": "Frontend dev"
+            }
+          ],
+          "markers": [],
+          "tools": "React",
+          "parallel": true
+        },
+        {
+          "id": "pdf-rendering",
+          "name": "PDF rendering of reports",
+          "who": "Backend dev",
+          "status": "confirmed",
+          "work": {
+            "days": 3,
+            "approx": true,
+            "felt": true,
+            "text": "about 3 days, fiddly",
+            "source": "Backend dev"
+          },
+          "wait": null,
+          "ai": [],
+          "markers": [
+            {
+              "kind": "pain",
+              "text": "PDF layout breaks on wide tables",
+              "source": "Backend dev"
+            }
+          ],
+          "tools": "WeasyPrint"
+        },
+        {
+          "id": "unit-tests",
+          "name": "Unit and integration tests",
+          "who": "Dev",
+          "status": "confirmed",
+          "work": {
+            "days": 1
+          },
+          "wait": null,
+          "ai": [
+            {
+              "label": "Claude writes the missing tests and runs them until green",
+              "level": "chains",
+              "who": "Dev"
+            }
+          ],
+          "markers": [],
+          "tools": "pytest, Vitest"
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "name": "Review",
+      "status": "confirmed",
+      "steps": [
+        {
+          "id": "ai-review",
+          "name": "Automated review of the pull request",
+          "who": "Dev",
+          "status": "confirmed",
+          "work": {
+            "days": 0.06,
+            "text": "30 minutes"
+          },
+          "wait": null,
+          "ai": [
+            {
+              "label": "Review agent comments the PR on style, security and tests",
+              "level": "tooled",
+              "who": "Dev"
+            }
+          ],
+          "markers": [],
+          "tools": "GitHub"
+        },
+        {
+          "id": "peer-review",
+          "name": "Peer review and fixes",
+          "who": "Senior dev",
+          "status": "confirmed",
+          "work": {
+            "days": 0.5,
+            "approx": true,
+            "source": "Senior dev"
+          },
+          "wait": {
+            "days": 1,
+            "approx": true,
+            "text": "about a day, reviewers are busy",
+            "source": "Dev lead",
+            "felt": true
+          },
+          "ai": [],
+          "markers": [
+            {
+              "kind": "slows",
+              "text": "PRs wait for a senior reviewer",
+              "source": "Dev lead"
+            }
+          ],
+          "tools": "GitHub"
+        }
+      ]
+    },
+    {
+      "id": "qa",
+      "name": "QA",
+      "status": "confirmed",
+      "steps": [
+        {
+          "id": "test-env",
+          "name": "Deployed to the test environment",
+          "who": "DevOps",
+          "status": "confirmed",
+          "work": {
+            "days": 0.06
+          },
+          "wait": {
+            "days": 1,
+            "text": "1 day, shared test environment",
+            "source": "QA"
+          },
+          "ai": [],
+          "markers": [],
+          "tools": "GitHub Actions"
+        },
+        {
+          "id": "functional-tests",
+          "name": "Functional tests of exports (CSV, PDF, schedules)",
+          "who": "QA",
+          "status": "confirmed",
+          "work": {
+            "days": 2
+          },
+          "wait": null,
+          "ai": [
+            {
+              "label": "Claude generates Playwright tests from the acceptance criteria",
+              "level": "prepares",
+              "who": "QA"
+            }
+          ],
+          "markers": [],
+          "tools": "Playwright",
+          "ca": 60,
+          "caApprox": true,
+          "caSource": "QA: about 4 stories in 10 come back incomplete"
+        },
+        {
+          "id": "regression",
+          "name": "Regression suite",
+          "who": "QA",
+          "status": "confirmed",
+          "work": {
+            "days": 0.5
+          },
+          "wait": null,
+          "ai": [],
+          "markers": [],
+          "tools": "Playwright",
+          "parallel": true
+        },
+        {
+          "id": "bug-triage",
+          "name": "Bug triage with dev",
+          "who": "QA, Dev",
+          "status": "confirmed",
+          "work": {
+            "days": 0.5
+          },
+          "wait": null,
+          "ai": [],
+          "markers": [
+            {
+              "kind": "duplicate",
+              "text": "Bugs are described twice, in Jira and in Slack",
+              "source": "QA"
+            }
+          ],
+          "tools": "Jira"
+        }
+      ]
+    },
+    {
+      "id": "release",
+      "name": "Release",
+      "status": "assumed",
+      "steps": [
+        {
+          "id": "release-train",
+          "name": "Waits for the release train",
+          "who": "Release manager",
+          "status": "confirmed",
+          "work": null,
+          "wait": {
+            "days": 4,
+            "approx": true,
+            "text": "up to a week, monthly train",
+            "source": "Release manager"
+          },
+          "ai": [],
+          "markers": [
+            {
+              "kind": "bottleneck",
+              "text": "One release a month for all teams",
+              "source": "Release manager"
+            }
+          ],
+          "batch": "monthly release train"
+        },
+        {
+          "id": "deploy-prod",
+          "name": "Production deployment",
+          "who": "DevOps",
+          "status": "confirmed",
+          "work": {
+            "days": 0.125,
+            "text": "1 hour"
+          },
+          "wait": null,
+          "ai": [],
+          "markers": [],
+          "tools": "GitHub Actions, Terraform"
+        },
+        {
+          "id": "customer-note",
+          "name": "Release note to customers",
+          "who": "Product",
+          "status": "confirmed",
+          "work": {
+            "days": 0.25
+          },
+          "wait": {
+            "days": 1
+          },
+          "ai": [
+            {
+              "label": "Claude drafts the release note from the merged PRs",
+              "level": "prepares",
+              "who": "Product"
+            }
+          ],
+          "markers": [],
+          "tools": "Intercom"
+        }
+      ]
+    }
+  ],
+  "loops": [
+    {
+      "id": "criteria-unclear",
+      "from": "refinement",
+      "fromStep": "refinement-meeting",
+      "to": "specification",
+      "toStep": "user-stories",
+      "label": "Stories sent back to Product when acceptance criteria are not testable",
+      "count": "one story in three",
+      "cost": {
+        "days": 1,
+        "approx": true
+      },
+      "source": "Dev lead"
+    },
+    {
+      "id": "claude-iterations",
+      "from": "build",
+      "fromStep": "api-export",
+      "to": "build",
+      "toStep": "api-export",
+      "label": "Back and forth with Claude on the scheduler",
+      "count": "2–3 iterations",
+      "source": "Backend dev"
+    },
+    {
+      "id": "review-fixes",
+      "from": "review",
+      "fromStep": "peer-review",
+      "to": "build",
+      "toStep": "api-export",
+      "label": "Review asks for changes",
+      "count": "most PRs, one round",
+      "cost": {
+        "days": 0.5
+      },
+      "source": "Senior dev"
+    },
+    {
+      "id": "qa-bugs",
+      "from": "qa",
+      "fromStep": "functional-tests",
+      "to": "build",
+      "toStep": "pdf-rendering",
+      "label": "Bugs found in QA go back to dev",
+      "count": "5–8 bugs per feature",
+      "cost": {
+        "days": 2,
+        "approx": true
+      },
+      "source": "QA"
+    },
+    {
+      "id": "qa-incomplete",
+      "from": "qa",
+      "fromStep": "functional-tests",
+      "to": "build",
+      "toStep": "ui-dialog",
+      "label": "Feature incomplete on the test environment",
+      "count": "about 4 stories in 10",
+      "cost": {
+        "days": 1,
+        "approx": true
+      },
+      "source": "QA",
+      "confirm": true
+    },
+    {
+      "id": "security-late",
+      "from": "qa",
+      "fromStep": "bug-triage",
+      "to": "specification",
+      "toStep": "security-check",
+      "label": "A data access question surfaces late and goes back to Security",
+      "count": "sometimes",
+      "source": "QA"
+    }
+  ],
+  "parking": [
+    {
+      "text": "An agent that runs the regression suite on every PR and posts the results",
+      "who": "QA"
+    },
+    {
+      "text": "Weekly releases instead of the monthly train",
+      "who": "Dev lead"
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "text": "Time is lost between teams more than in the work.",
+      "status": "confirmed"
+    },
+    {
+      "id": "H2",
+      "text": "AI speeds up Build, but the work then waits longer in Review and QA.",
+      "status": "partial"
+    },
+    {
+      "id": "H3",
+      "text": "Unclear acceptance criteria cause most of the rework.",
+      "status": "open"
+    }
+  ],
+  "log": [
+    {
+      "at": "10:05",
+      "text": "Case and stages set (fictional example)"
+    },
+    {
+      "at": "10:40",
+      "text": "Build detailed in four sub-steps; UI dialog in parallel with the API"
+    },
+    {
+      "at": "11:15",
+      "text": "QA rework loops added with their counts"
+    }
+  ]
+}
