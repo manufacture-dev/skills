@@ -90,13 +90,27 @@ You write the page; there is no template. Use the design system you are told to 
 
 How the page gets its data: write the page so its script reads two JSON tags, `<script id="vsm-data" type="application/json">` (the map) and `<script id="vsm-summary" type="application/json">` (the figures), then run `embed`: it fills both, places them before the page's first script, and replaces them in place on the next run. Never type the data or the figures into the page by hand.
 
+### Layout (required, whatever the design system)
+
+The design system decides colours, type, spacing and components. It never changes the layout below: a value stream map is read left to right, and people compare pages of different maps.
+
+1. **Order of the page:** header (case, trigger → end, team) · totals strip · the map with its view switch · rework list · per-stage table · what is still to complete · hypotheses and parking · legend (collapsible) · latest changes.
+2. **Two views of the same map, switched by a control above it:** **Detailed** (default) and **Macro**. Both keep the same horizontal flow and the same stage order; switching changes only the level of detail.
+3. **Horizontal, left to right, on one line.** Stages follow each other from left to right as frames; in Detailed, each stage holds its sub-steps as boxes, also left to right. The flow never wraps onto a second line and never stacks vertically, on any screen: when it is wider than the screen, the flow scrolls sideways inside its own container (the page itself never scrolls sideways).
+4. **Between two boxes:** a queue showing the wait of the box that follows (a ▽-like symbol with the duration, "?" when unknown), or a plain arrow when there is no wait to show. The wait sits *between* the boxes, before the box that waits, never inside a box.
+5. **Parallel sub-steps** are stacked one above the other in the same column, so they read as happening at the same time; the totals count the longest.
+6. **A box (Detailed)** shows, in this order: name · who · tools · work time · %C&A (red under 70, amber under 90) · batch. AI uses sit just above the box, each with its level; markers sit just below it; ↩ / ↻ counts on the box when it sends work back or iterates. Items marked `confirm` are dashed and say "to confirm".
+7. **A stage in Macro** is one box per stage, on the same line: name · actors · tools · its wait, work and lead time (from `summary.stages`) · rolled %C&A of its boxes · ↩ / ↻ counts · batch · number of AI uses and markers.
+8. **A timeline under the flow**, aligned with the stages: for each stage, its wait then its work, proportional to the lead time (wait and work in two distinct colours used everywhere on the page: wait warm, work cool).
+9. **Rework arrows** run under the boxes, from the box that sends work back to the box that redoes it, with the loop's count as a short caption; they appear when a box or a line of the rework list is selected (all at once is unreadable), in both views (in Macro, between stage boxes).
+10. **Totals strip:** lead time, work, wait, flow efficiency, rolled %C&A, each as a large figure with its label, and `totals.note` under it.
+
 What every page must show, from `vsm-data` and `vsm-summary` (never recompute a total, a share or an efficiency yourself; looking up which boxes are missing a time or which loops touch a box is fine):
 
 - **Header:** the case title, client, trigger → end, the team.
 - **Totals:** lead time = wait + work, work, wait, flow efficiency (work ÷ lead time), rolled %C&A (or "not measured"), and `totals.note` when present. Times are working days; show under 1 day in hours (1 day = 8 h).
-- **The flow:** the stages in order, each with its sub-steps as boxes in flow order; parallel sub-steps stacked or grouped so they read as simultaneous. On each box: name, who, tools, work time, %C&A, batch, AI uses with their level, markers by kind. A wait is drawn *before* the box that waits, as a queue between boxes. Estimates (`approx`), felt figures (`felt`) and unknown values (`null`, shown as "?") must be told apart, and everything marked `confirm` must look provisional (dashed, "to confirm").
-- **A macro view:** one box per stage with its totals, its rework counts (↩ sent back, ↻ iterations) and its batch; a toggle or a section is enough.
-- **Rework:** every loop with its ends (box → box), label, count, cost and source; an arrow or a clear link from the box that sends work back to the box that redoes it (arrows may appear on demand, e.g. on click).
+- **The flow:** laid out as above. Estimates (`approx`), felt figures (`felt`) and unknown values (`null`, shown as "?") are told apart, and everything marked `confirm` looks provisional.
+- **Rework list:** every loop with its ends (box → box), label, count, cost and source; selecting a line draws its arrow.
 - **Per stage:** the `summary.stages` table (wait, work, lead time, share of lead time, efficiency, rework, AI uses, boxes without durations), with the longest stage highlighted.
 - **What is still to complete:** `missing.work` and `missing.wait` (boxes without a work or wait time), `toConfirm` (items, loops), stages still `assumed`.
 - **Hypotheses** with their status, **parking** ideas, and the latest `log` entries.
@@ -106,7 +120,7 @@ What every page must show, from `vsm-data` and `vsm-summary` (never recompute a 
 
 Rules for the page:
 
-- It is one self-contained HTML page (it may load fonts or a library from a public CDN), readable on a phone, in light and dark.
+- It is one self-contained HTML page (it may load fonts or a library from a public CDN), in light and dark. On a phone the layout stays the same: the flow scrolls sideways in its container.
 - Run `embed` after writing the page and again after every change to the map; `import` reads the map back from it.
 - Check the page against `summary` before sharing: same totals, every stage and loop present.
 - Show nothing the map does not hold: no invented figure, no extra comment on people.
