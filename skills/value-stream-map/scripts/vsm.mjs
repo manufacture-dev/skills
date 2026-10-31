@@ -225,6 +225,7 @@ function summarize(data) {
   const markers = {}; stages.forEach((s) => [s, ...(s.steps || [])].forEach((x) => (x.markers || []).forEach((m) => { markers[m.kind] = (markers[m.kind] || 0) + 1; })));
   // Items to confirm, as data (the page writes them in its own words and language).
   const toConfirm = [];
+  stages.forEach((s) => (s.steps || []).forEach((x) => x.status === 'assumed' && toConfirm.push({ stage: s.id, step: x.id, type: 'step', text: x.name })));
   stages.forEach((s) => [s, ...(s.steps || [])].forEach((x) => {
     const at = { stage: s.id, step: x === s ? null : x.id };
     (x.ai || []).forEach((a) => a.confirm && toConfirm.push({ ...at, type: 'ai', text: a.label }));
@@ -245,7 +246,7 @@ function summarize(data) {
     counts: {
       stages: stages.length, confirmed: stages.filter((s) => s.status === 'confirmed').length,
       boxes: perStage.reduce((m, r) => m + r.boxes, 0), boxesWithoutWork: perStage.reduce((m, r) => m + r.withoutWork, 0), boxesWithoutWait: perStage.reduce((m, r) => m + r.withoutWait, 0),
-      loops: loops.length, aiByLevel: ai, markersByKind: markers, parking: (data.parking || []).length,
+      loops: loops.length, reworkOut: perStage.reduce((m, r) => m + r.reworkOut, 0), iterations: perStage.reduce((m, r) => m + r.iterations, 0), aiUses: perStage.reduce((m, r) => m + r.aiUses, 0), aiByLevel: ai, markersByKind: markers, parking: (data.parking || []).length,
       hypotheses: (data.hypotheses || []).reduce((m, h) => { m[h.status || 'open'] = (m[h.status || 'open'] || 0) + 1; return m; }, {}),
     },
     toConfirm, missing,

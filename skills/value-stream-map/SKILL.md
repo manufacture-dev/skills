@@ -98,12 +98,12 @@ The design system decides colours, type, spacing and components. It never change
 1. **Order of the page:** header (case, trigger → end, team) · totals strip · the map with its view switch · rework list · per-stage table · what is still to complete · hypotheses and parking · legend (collapsible) · latest changes · **Continue this map**.
 2. **Two views of the same map, switched by a control above it, in this order: Macro, then Detailed.** Macro is shown first (the overview), Detailed one click away. Both keep the same horizontal flow and the same stage order; switching changes only the level of detail.
 3. **Horizontal, left to right, on one line.** Stages follow each other from left to right as frames; in Detailed, each stage holds its sub-steps as boxes, also left to right. The flow never wraps onto a second line and never stacks vertically, on any screen: when it is wider than the screen, the flow scrolls sideways inside its own container (the page itself never scrolls sideways).
-4. **Between two boxes:** a queue showing the wait of the box that follows (a ▽-like symbol with the duration, "?" when unknown), or a plain arrow when there is no wait to show. The wait sits *between* the boxes, before the box that waits, never inside a box.
+4. **Between two boxes:** a queue (a ▽-like symbol) showing the wait of the box that follows: its duration, or "?" when the wait is unknown (`null`); a plain arrow only when the wait is 0. The wait sits *between* the boxes, before the box that waits, never inside a box. The first box of a stage gets its queue inside the stage frame, before the box; stage frames are joined by plain arrows. In Macro, each stage box gets the stage's wait as its queue, and the box also repeats wait, work and lead as figures.
 5. **Parallel sub-steps** are stacked one above the other in the same column, so they read as happening at the same time; the totals count the longest.
 6. **A box (Detailed)** shows, in this order: name · who · tools · work time (with the words used, `text`, when present) · %C&A (red under 70, amber under 90) · batch. AI uses sit just above the box, each with its level; markers sit just below it; ↩ / ↻ counts on the box when it sends work back or iterates. Items marked `confirm` are dashed and say "to confirm".
 7. **A stage in Macro** is one box per stage, on the same line, all from `summary.stages`: name · `actors` · `tools` · `wait`, `work`, `lead` · `rolledCA` · `reworkOut` ↩ / `iterations` ↻ · `batches` · AI: `aiUses` and the highest level reached, `aiTopLevel` · markers: `markersByKind` (each kind with its count, e.g. "slows ×2").
 8. **A timeline under the flow**: under each stage, a bar of its wait then its work, all stages on one shared scale (days to width), so the longest stage has the longest bar; wait and work in two distinct colours used everywhere on the page (wait warm, work cool).
-9. **Rework arrows** run in lanes below all the boxes (stacked parallel boxes included), never across a box, from the box that sends work back to the box that redoes it, with the loop's count as a short caption; they appear when a box or a line of the rework list is selected (all at once is unreadable), in both views (in Macro, between stage boxes).
+9. **Rework arrows** run in lanes below all the boxes (stacked parallel boxes included), never across a box, from the box that sends work back to the box that redoes it, with the loop's count as a short caption; they appear when a box or a line of the rework list is selected (all at once is unreadable), in both views (in Macro, between stage boxes). To reach a box inside a stack of parallel boxes, the arrow runs up a gutter beside the stack and points at that exact box.
 10. **Totals strip:** lead time, work, wait, flow efficiency, rolled %C&A, each as a large figure with its label, and `totals.note` under it.
     Under the lead time, when `totals.incompleteStages` > 0: "N incomplete stage(s) (a box without work time), M with no duration at all" (`stagesWithoutDurations`), so nobody reads a partial lead time as complete.
 11. **Details that must not be lost:**
@@ -112,13 +112,13 @@ The design system decides colours, type, spacing and components. It never change
     - A stage still `assumed` has a dashed frame and says "to confirm"; so does a sub-step with `status: "assumed"`.
     - Sources stay reachable: every duration, %C&A, marker and loop shows its `source` (visible, or in a tooltip or an expandable detail on the box).
     - The AI level is readable without colour: a graded mark (1 to 4 notches, or the level's name) next to each AI use.
-    - The per-stage table has a wait/work bar per stage (same colours and scale as the timeline), a "whole stream" total row, and the note "Recorded durations only: a box without duration counts as 0; the figures move as missing times come in."
+    - The per-stage table has a wait/work bar per stage (same colours and scale as the timeline), a "whole stream" total row (from `totals` and `counts`: `reworkOut`, `iterations`, `aiUses`, `boxesWithoutWork`), and the note "Recorded durations only: a box without duration counts as 0; the figures move as missing times come in."
     - The legend explains every symbol used: the queue ▽, work time, %C&A and rolled %C&A, ↩ and ↻, batch, stacked boxes, dashed = to confirm, ~ estimate, felt, ? unknown, the timeline, lead time and flow efficiency, and that a stage's times are the sum of its boxes (Σ).
     - Latest changes: the last 8 `log` entries, newest first.
     - With a FR/EN switch, the page's own labels switch too, not only the map's texts.
 12. **Continue this map** (always, last section): how to carry on with this map. Three short steps: install the value-stream-map skill (link: https://github.com/manufacture-dev/value-stream-map), get this map's data, ask Claude to continue it. Then two buttons on the exact `vsm-data` content:
     - **Copy the data**: `navigator.clipboard.writeText(json)` inside the click; if it fails, show the JSON in a read-only, selected text area so it can be copied by hand.
-    - **Download (JSON)**: shown only when the page runs as a Claude artifact that allows downloads: `const dl = window.claude && await window.claude.use('downloads')`; when `dl` is not null, `dl.save({filename: '<case>.json', data: json})`. When publishing the page as an artifact, declare the `downloads` capability. Without it, show only Copy.
+    - **Download (JSON)**: shown only when the page runs as a Claude artifact that allows downloads: `const dl = window.claude && await window.claude.use('downloads')`; when `dl` is not null, `dl.save({filename: '<slug of case.title>.json', data: json})`. When publishing the page as an artifact, declare the `downloads` capability. Without it, show only Copy.
     A short status line says "Copied." or "Saved." after the action.
 
 What every page must show, from `vsm-data` and `vsm-summary` (never recompute a total, a share or an efficiency yourself; looking up which boxes are missing a time or which loops touch a box is fine):
@@ -128,11 +128,11 @@ What every page must show, from `vsm-data` and `vsm-summary` (never recompute a 
 - **The flow:** laid out as above. Estimates (`approx`), felt figures (`felt`) and unknown values (`null`, shown as "?") are told apart, and everything marked `confirm` looks provisional.
 - **Rework list:** every loop with its ends (box → box), label, count, cost and source; selecting a line draws its arrow.
 - **Per stage:** the `summary.stages` table (wait, work, lead time, share of lead time, efficiency, rework, AI uses, boxes without durations), with the longest stage highlighted.
-- **What is still to complete:** `missing.work` and `missing.wait` (boxes without a work or wait time), `toConfirm` (items, loops), stages still `assumed`.
+- **What is still to complete:** `missing.work` and `missing.wait` (boxes without a work or wait time), `toConfirm` (AI uses, markers, loops and sub-steps still assumed), stages still `assumed`.
 - **Hypotheses** with their status, **parking** ideas, and the latest `log` entries.
 - **Numbers:** days with one decimal (67.7 d); under 1 day in hours (1 day = 8 h); a range as min–max, prefixed "~" when approximate; `max` alone as "≤"; `null` as "?". A stage whose `noDurations` is true shows "?" for its times, never 0.
 - **A legend:** AI levels (assistant, tooled, prepares, chains), marker kinds, the symbols you use.
-- **Language:** the map's language; when the map has `i18n.fr`, offer a FR/EN switch using it.
+- **Language:** the map's language; when the map has `i18n.fr`, offer a FR/EN switch using it. `i18n.fr` maps whole texts; translate a text only when it is a key there (a stage named "QA" and the role "QA" are the same text, so give such words no entry).
 
 Rules for the page:
 
