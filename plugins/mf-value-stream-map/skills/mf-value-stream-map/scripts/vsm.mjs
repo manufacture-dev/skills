@@ -670,20 +670,19 @@ if (cmd === 'validate') {
   if (!existsSync(pg)) { console.error(`not found: ${pg}`); process.exit(2); }
   const port = Number(arg('--port') || 4173);
   let current = load(file), valid = current.errors.length ? null : current.data;
-  const clients = new Set();
-  const RELOAD = '<script>new EventSource("/events").onmessage=(e)=>{if(e.data==="reload")location.reload()}</script>';
+  // Open pages ask for /version every second and reload when it changes. Polling, not a held connection: browsers
+  // allow about six open connections per site, and /designs alone is four pages, so held connections hang new tabs.
+  let version = Date.now();
+  const RELOAD = '<script>(()=>{let v=null;setInterval(async()=>{try{const r=await fetch("/version",{cache:"no-store"});const t=await r.text();if(v!==null&&t!==v)location.reload();v=t}catch(e){}},1000)})()</script>';
   let timer;
   const changed = () => { clearTimeout(timer); timer = setTimeout(() => {
     current = load(file); if (!current.errors.length) valid = current.data;
     console.log(`${new Date().toLocaleTimeString()} ${current.errors.length ? 'INVALID (last valid map kept): ' + current.errors[0] : 'reloaded'}`);
-    for (const r of clients) r.write('data: reload\n\n');
+    version = Date.now();
   }, 120); };
   for (const f of new Set([file, pg])) watch(dirname(f), (_, name) => { if (!name || join(dirname(f), name) === f) changed(); });
   const server = createServer((req, res) => {
-    if (req.url === '/events') {
-      res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
-      res.write('data: hello\n\n'); clients.add(res); req.on('close', () => clients.delete(res)); return;
-    }
+    if (req.url === '/version') { res.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); res.end(String(version)); return; }
     if (req.url === '/designs') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(designsIndex(THEMES.map((t) => [t, `/?theme=${encodeURIComponent(t)}`, themeInfo(t)]))); return; }
     if (req.url === '/map.json') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(valid)); return; }
     if (req.url === '/' || req.url.startsWith('/?')) {
