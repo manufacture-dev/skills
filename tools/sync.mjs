@@ -63,7 +63,15 @@ for (const e of market.plugins) {
     const text = readFileSync(md, 'utf8');
     const m = text.match(/^---\n([\s\S]*?)\n---\n/);
     if (!m) { console.error(`no frontmatter: ${relative(ROOT, md)}`); process.exit(1); }
-    const front = m[1].replace(/\nmetadata:\n(?:  .*\n?)*/, '\n').replace(/\n+$/, '');
+    // Strict YAML parsers (the skills CLI's among them) refuse an unquoted value holding ": " or " #", which
+    // Claude Code and Codex accept: write the description as a double-quoted string (JSON is valid YAML), and refuse
+    // any other unquoted value that strict YAML would misread.
+    const front = m[1].replace(/\nmetadata:\n(?:  .*\n?)*/, '\n').replace(/\n+$/, '')
+      .replace(/^description: (?!")(.*)$/m, (_, d) => `description: ${JSON.stringify(d)}`);
+    for (const line of front.split('\n')) {
+      const v = (line.match(/^[a-z-]+: (.*)$/) || [])[1];
+      if (v && !/^"/.test(v) && (/: | #/.test(v) || /^[\[{&*!|>'%@`]/.test(v))) { console.error(`${relative(ROOT, md)}: quote this value, strict YAML misreads it: ${line.slice(0, 60)}`); process.exit(1); }
+    }
     put(md, `---\n${front}\nmetadata:\n  version: "${VERSION}"\n---\n` + text.slice(m[0].length));
   }
 }
