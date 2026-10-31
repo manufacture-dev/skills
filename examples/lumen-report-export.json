@@ -51,7 +51,8 @@
             }
           ],
           "markers": [],
-          "tools": "Zendesk, Notion"
+          "tools": "Zendesk, Notion",
+          "phase": "upstream"
         },
         {
           "id": "usage-check",
@@ -222,45 +223,25 @@
       "id": "planning",
       "name": "Sprint planning",
       "status": "confirmed",
-      "steps": [
+      "actors": "Team, Dev lead",
+      "tools": "Jira",
+      "work": {
+        "days": 0.25,
+        "text": "2 hours of planning"
+      },
+      "wait": {
+        "days": 5,
+        "approx": true,
+        "text": "up to 2 weeks, the current sprint must end",
+        "source": "Dev lead"
+      },
+      "batch": "2-week sprint",
+      "ai": [],
+      "markers": [
         {
-          "id": "estimate",
-          "name": "Estimation in story points",
-          "who": "Team",
-          "status": "confirmed",
-          "work": {
-            "days": 0.125,
-            "text": "1 hour"
-          },
-          "wait": null,
-          "ai": [],
-          "markers": [],
-          "tools": "Jira"
-        },
-        {
-          "id": "sprint-commit",
-          "name": "Committed to the next sprint",
-          "who": "Team",
-          "status": "confirmed",
-          "work": {
-            "days": 0.125
-          },
-          "wait": {
-            "days": 5,
-            "approx": true,
-            "text": "up to 2 weeks, the current sprint must end",
-            "source": "Dev lead"
-          },
-          "ai": [],
-          "markers": [
-            {
-              "kind": "slows",
-              "text": "Ready stories wait for the next sprint",
-              "source": "Dev lead"
-            }
-          ],
-          "tools": "Jira",
-          "batch": "2-week sprint"
+          "kind": "slows",
+          "text": "Ready stories wait for the next sprint",
+          "source": "Dev lead"
         }
       ]
     },
@@ -542,7 +523,7 @@
           "id": "customer-note",
           "name": "Release note to customers",
           "who": "Product",
-          "status": "confirmed",
+          "status": "assumed",
           "work": {
             "days": 0.25
           },
@@ -679,6 +660,25 @@
     {
       "at": "11:15",
       "text": "QA rework loops added with their counts"
+    },
+    {
+      "at": "11:40",
+      "text": "Sprint planning kept as one box (not detailed); first Discovery step marked upstream"
     }
-  ]
+  ],
+  "i18n": {
+    "fr": {
+      "Discovery": "Découverte",
+      "Specification": "Spécification",
+      "Refinement": "Affinage",
+      "Sprint planning": "Planification du sprint",
+      "Build": "Développement",
+      "Review": "Revue",
+      "QA": "Recette",
+      "Release": "Mise en production",
+      "Scheduled report exports: from customer request to production": "Exports programmés de rapports : de la demande client à la production",
+      "2-week sprint": "sprint de 2 semaines",
+      "monthly release train": "train de mise en production mensuel"
+    }
+  }
 }
