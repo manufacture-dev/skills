@@ -317,7 +317,18 @@ function questionsFor(data) {
   if (hyp.length) enrich.push({ pass: 'enrich', theme: 'check', stage: null, boxes: hyp.map((h) => ({ key: `hypothesis:${h.id}`, name: h.text })), question: `Does what was said confirm or refute: ${hyp.map((h) => `"${h.text}"`).join('; ')}?` });
   if (!(data.parking || []).length && !asked.has('case:parking')) enrich.push({ pass: 'enrich', theme: 'check', stage: null, boxes: [{ key: 'case:parking', name: 'ideas for later' }], question: 'Any idea for doing it differently, to note for later?' });
   enrich.sort((a, b) => THEMES.indexOf(a.theme) - THEMES.indexOf(b.theme));
-  return { flow, enrich };
+  // While the stream is built, a few detail questions are worth asking at once, on the boxes where they matter
+  // most: the wait before a box that hands over or waits by nature (a review, a validation, a meeting, a release
+  // train), and the AI use on a box that writes, codes or tests. Optional: never a prerequisite to go on.
+  const WAITS = /review|revue|valid|approv|sign.?off|accept|meeting|réunion|refinement|planning|sprint|train|release|deploy|déploi|mise en prod|triage|handover|hand.?off|wait|attente|queue|slot/i;
+  const AI = /writ|rédig|draft|code|coding|develop|dévelop|implement|test|spec|stor|criteria|critère|doc|mock|maquette|design|brief|note/i;
+  const hints = [];
+  stages.forEach((s) => (s.steps || []).filter((x) => x.phase !== 'upstream').forEach((x) => {
+    const k = `${s.id}/${x.id}`, at = { stage: s.id, step: x.id };
+    if (!x.wait && !x.parallel && WAITS.test(x.name) && !asked.has(`${k}:wait`)) hints.push({ pass: 'flow', theme: 'wait', key: `${k}:wait`, ...at, optional: true, question: `How long does the work usually wait before "${x.name}"?` });
+    if (empty(x.ai) && AI.test(x.name) && !asked.has(`${k}:ai`)) hints.push({ pass: 'flow', theme: 'ai', key: `${k}:ai`, ...at, optional: true, question: `Is AI used for "${x.name}"? For what?` });
+  }));
+  return { flow, enrich, hints };
 }
 
 // The figures a page shows, computed once here so every page (whatever its design) shows the same numbers.
@@ -515,11 +526,13 @@ if (cmd === 'validate') {
   // (one stage) · --near <id> (that stage first, then its neighbours) · --limit n · --text.
   const { data } = load(file);
   if (!data) process.exit(1);
-  const { flow, enrich } = questionsFor(data);
+  const { flow, enrich, hints } = questionsFor(data);
   // Asking for a theme or a stage (enrich it now) is allowed before the whole stream is built.
   const flowHere = arg('--stage') ? flow.filter((x) => x.stage === arg('--stage')) : flow;
   const pass = arg('--pass') || (arg('--theme') || !flowHere.length ? 'enrich' : 'flow');
   let list = pass === 'flow' ? flow : enrich;
+  // In pass flow, the optional detail questions worth asking now follow, nearest the box just discussed.
+  if (pass === 'flow') list = list.concat(hints);
   if (arg('--theme')) list = list.filter((x) => x.theme === arg('--theme'));
   if (arg('--stage')) list = list.filter((x) => x.stage === arg('--stage'));
   if (arg('--near')) {
@@ -533,8 +546,10 @@ if (cmd === 'validate') {
   if (process.argv.includes('--text')) {
     const toEnrich = count(enrich).map(([t, v]) => `${t} ${v}`).join(', ') || 'nothing';
     console.log(flow.length ? `stream not built yet: ${flow.length} question(s) (frame, steps) · to enrich later: ${toEnrich} (boxes)` : `stream built · to enrich: ${toEnrich} (boxes)`);
-    list.slice(0, n).forEach((x) => console.log(`[${x.theme}]${x.stage ? ' ' + x.stage : ''}${x.boxes ? ` (${x.boxes.length})` : ''} · ${x.question}`));
-    if (list.length > n) console.log(`… ${list.length - n} more`);
+    // Optional hints, then, only when the stream questions are fewer than the limit, or with --near.
+    const shown = arg('--near') ? list.slice(0, n) : [...list.filter((x) => !x.optional).slice(0, n), ...list.filter((x) => x.optional).slice(0, 1)];
+    shown.forEach((x) => console.log(`[${x.theme}${x.optional ? ', optional' : ''}]${x.stage ? ' ' + x.stage : ''}${x.boxes ? ` (${x.boxes.length})` : ''} · ${x.question}`));
+    if (list.length > shown.length) console.log(`… ${list.length - shown.length} more`);
   } else console.log(JSON.stringify({ pass, left, questions: list.slice(0, n) }, null, 2));
 } else if (cmd === 'summary') {
   const { data, errors } = load(file);
