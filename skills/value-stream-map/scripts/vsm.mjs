@@ -203,6 +203,9 @@ function summarize(data) {
       iterations: loops.filter((l) => l.from === s.id && l.to === s.id && (l.toStep || '') === (l.fromStep || '')).length,
       aiUses: (s.ai || []).length + st.reduce((m, x) => m + (x.ai || []).length, 0),
       noDurations: boxes.every((x) => !x.work && !x.wait),
+      detailed: st.length > 0,
+      aiTopLevel: (() => { const order = AI_LEVELS; let top = -1; [s, ...st].forEach((x) => (x.ai || []).forEach((a) => { top = Math.max(top, order.indexOf(a.level)); })); return top >= 0 ? order[top] : null; })(),
+      markersByKind: [s, ...st].reduce((m, x) => { (x.markers || []).forEach((k) => { m[k.kind] = (m[k.kind] || 0) + 1; }); return m; }, {}),
       rolledCA: (() => { const v = boxes.filter((x) => typeof x.ca === 'number').map((x) => x.ca); return v.length ? Math.round(v.reduce((m, c) => (m * c) / 100, 1) * 100) : null; })(),
       markers: boxes.reduce((m, x) => m + (x.markers || []).length, 0) + (st.length ? (s.markers || []).length : 0),
       actors: s.actors || [...new Set(st.map((x) => x.who).filter(Boolean).flatMap((w) => String(w).split(/\s*,\s*/)))].join(', ') || null,
@@ -235,7 +238,8 @@ function summarize(data) {
     if (!x.work) missing.work.push(ref); if (!x.wait) missing.wait.push(ref);
   }));
   return {
-    totals: { lead: r1(lead), work: r1(work), wait: r1(wait), flowEfficiency: pct(work, lead), rolledCA: rolled, caMeasuredBoxes: cas.length, note: (data.case || {}).leadNote || null },
+    totals: { lead: r1(lead), work: r1(work), wait: r1(wait), flowEfficiency: pct(work, lead), rolledCA: rolled, caMeasuredBoxes: cas.length, note: (data.case || {}).leadNote || null,
+      incompleteStages: perStage.filter((r) => r.withoutWork > 0).length, stagesWithoutDurations: perStage.filter((r) => r.noDurations).length },
     upstream: un ? { boxes: un, work: r1(uw), wait: r1(uq), lead: r1(uw + uq) } : null,
     stages: perStage, longestStage: longest ? longest.id : null,
     counts: {
