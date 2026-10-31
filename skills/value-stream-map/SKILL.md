@@ -11,7 +11,8 @@ A value stream map shows how one real piece of work travels from the request to 
 CLI (Node 18+, no dependencies). Run it from the project, with the path to this skill's `scripts/vsm.mjs` (for example `node .claude/skills/value-stream-map/scripts/vsm.mjs outline map.json`); below, `scripts/vsm.mjs` stands for that path:
 
 ```bash
-node scripts/vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"]
+node scripts/vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"] [--trigger <text>] [--end <text>] [--team "<A>,<B>"]
+node scripts/vsm.mjs questions <map.json> [--text] [--limit n] # what is still to ask, in interview order
 node scripts/vsm.mjs validate <map.json>
 node scripts/vsm.mjs outline  <map.json>                      # compact view: ids and what each box holds
 node scripts/vsm.mjs patch    <map.json> --ops '<json array>' # apply changes, validate, write only if valid
@@ -27,17 +28,19 @@ node scripts/vsm.mjs import   <page.html> --output <map.json> # take the map bac
 - **From scratch.** `node scripts/vsm.mjs new <map.json> --title "<the case>" --stages "Story,Refinement,Build,Review,QA,Release"` creates an empty map with your stages, in order. Without `--stages`, it starts from the starter stages (Request, Refinement, Build, Review, QA, Release), which the discussion then changes (see **Changing the stages**).
 - To share it, write the page (below) and publish it, for example as a Claude artifact. It is your own page; the one you started from stays as it was.
 
-## Building a map from scratch
+## Interviewing: you lead the session
 
-Map one real, recent piece of work (a feature that reached production), not the process in general.
+You can run the session yourself, as the facilitator would: you ask, you record, you ask the next question, and `questions` keeps the list of what is still to ask, so nothing is forgotten. Do this when a map is started from scratch, and whenever someone wants to continue a map without bringing their own notes.
 
-1. The case: what it is, what starts the work (`case.trigger`), when value is delivered (`case.end`), who takes part (`case.team`).
-2. The stages, as the team names them, in order: `new` with `--stages`, or the starter stages, shown to the people and corrected with them (renamed, added, removed, reordered) before going into detail.
-3. Stage by stage, in flow order: the steps inside it and who does each (`detail`), then for each step its work time, how long the work waited before it, and what it uses (tools, AI).
-4. Rework: what comes back, from which step to which, how often and at what cost (`loops`), and for each step that receives work, how much of it can be used as is (`ca`).
-5. Read the map back with the people who described it: confirm each stage, fill the durations still missing, note ideas for later in `parking`.
+1. **Frame the case first**, one question at a time: the use case (one real, recent piece of work that reached production, not the process in general), what starts the work (trigger), when value is delivered (end), who takes part, then the stages: propose the ones given, or the starter stages, and ask what to rename, add, merge, remove or reorder. Then create the map already framed: `new <map.json> --title "<the case>" --trigger "…" --end "…" --team "…" --stages "…"`.
+2. **Then go round, staying with the discussion:** after each answer, run `questions --text --limit 3 --near <stage>[/<step>]` on the box just talked about: it puts first what is still missing on that box, then on its stage, its rework loops and the neighbouring stages. Pick the question that follows most naturally from what was just said (usually the first), and ask it in the person's language and in your own words, linked to their answer ("you said the review waits for a senior: how long, usually?"); never read the template. Move on to another part of the map only when nothing is left nearby or the person changes subject. Without `--near` the order is frame → flow, stage by stage (steps and who, work and wait times, then %C&A, AI, tools, what slows) → rework → read-back (what is still to confirm, hypotheses, ideas for later).
+3. **Record each answer** with one `patch` (smallest change, as below), then say in one line what you recorded and ask the next question. Record everything the answer brings, not only what you asked: it removes questions further down. When there is no answer ("we don't know", "no AI there", "nothing comes back"), add the question's key to `asked` (`{"push": "asked", "value": "<key>"}`) so it is not asked again; an unknown value stays `null`.
+4. **Everything can move along the way:** the use case, its start and end, the team and the stages. When an answer changes the frame ("actually it starts with the support ticket"), change it (`set` on `case.*`, `stage` ops), say so, and log who said it.
+5. **Follow the person** when they jump ahead or come back to an earlier box: record it where it belongs, then return to the first open question.
+6. Every few answers, or when asked, give the progress in one line: questions left by phase (`questions --text` prints them) and the lead time so far (`summary --text`).
+7. **Close** when `questions` has nothing left or the people stop: read the map back (`summary --text`): the stages and where work waits most, the rework, the AI uses, and what is still open. Then offer the page.
 
-Ask one question at a time and record only what was said; unknown stays `null`. Then go on as below.
+Ask one question at a time and record only what was said; never answer for the person. In a group workshop it works the same: the facilitator relays, or you ask the room.
 
 ## Continuing the map
 
@@ -47,7 +50,7 @@ Whether the map is new or existing, inputs are what people say or write: worksho
 2. Decide what the input changes: a stage (added, renamed, moved, merged), a sub-step, who does it, a tool, a wait or work time, an AI use, a marker, a rework loop, a %C&A, an idea for later, a hypothesis status.
 3. Make the smallest change with one `patch` call holding every change, plus one `{"log": "…"}` op saying what changed and from whom. Keep existing ids and order.
 4. `patch` validates: if it refuses, nothing was written; fix the ops and send again.
-5. Say in one or two lines what changed, then what is still missing on the boxes you touched (a wait time, a work time, a %C&A) as a question to ask.
+5. Say in one or two lines what changed, then suggest how to complete it: run `questions --text --limit 3 --near <box you touched>` and offer one or two of them as questions, linked to the input ("the notes give QA's bugs but not how long they wait for a fix: do you know?"). Do not list every gap: keep to what follows from what was just said.
 
 When an input is ambiguous, make no edit and ask one short question. When an input contradicts the map, correct it and say so in the log. When you choose between two boxes (a wait that could sit on either), say which one and why, in the log and in your reply.
 
@@ -83,6 +86,7 @@ Each op writes its own log line; add a `{"log"}` op saying who asked for it. Cha
 - `confirm: true` on an AI use, a marker or a loop you inferred rather than heard: the page shows it dashed, "to confirm".
 - `parking[]`: `{text, who}` ideas for the future flow. Record them; they never go into the stages.
 - `hypotheses[]`: `{id, text, status}`, status `open`, `confirmed`, `refuted` or `partial`. The status changes only when the people concerned say so.
+- `asked[]` (optional): keys of questions from `questions` that were asked and got no answer, so they are not asked again.
 - `log[]`: `{at, text}`, one entry per meaningful change, shown under the map as the latest changes.
 - `i18n.fr` (optional): French text for each English text of the map, used by the page's FR/EN switch. A text without a translation shows in English in both.
 

@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 // Value stream map: create, validate, outline, edit, compute its figures, embed it in a page, import it from one.
 // The page itself is written by the agent, in whatever design system it is given (see SKILL.md). No dependencies, Node 18+.
-//   node vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"] [--client <name>]   (default: the starter stages)
+//   node vsm.mjs new      <map.json> --title <text> [--stages "<Stage 1>,<Stage 2>,…"] [--client <name>] [--trigger <text>] [--end <text>] [--team "<A>,<B>"]
+//                                                          (default stages: the starter stages)
 //   node vsm.mjs validate <map.json>
 //   node vsm.mjs outline  <map.json>                       (compact view for an agent: ids and what each box holds)
 //   node vsm.mjs patch    <map.json> --ops '<json array>'  (apply changes, validate, write only if valid)
 //   node vsm.mjs detail   <map.json> --stage <id> --steps '<json>' [--to <sub-step id>]
 //   node vsm.mjs summary  <map.json> [--text]              (the figures a page shows: totals, per stage, gaps; JSON by default)
+//   node vsm.mjs questions <map.json> [--text] [--limit n] [--near <stage>[/<step>]]
+//                                                          (what is still to ask, in interview order, or nearest the box just discussed first)
 //   node vsm.mjs embed    <map.json> --page <page.html>    (put the map and its figures into the page, replacing any previous copy)
 //   node vsm.mjs import   <page.html> --output <map.json> [--force]   (take the map back out of a page)
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, statSync, renameSync } from 'node:fs';
@@ -111,6 +114,7 @@ export function validate(data) {
     if (h.status && !HYPOTHESIS_STATUS.includes(h.status)) err(`hypotheses[${i}].status`, `one of ${HYPOTHESIS_STATUS.join(', ')}`);
   });
   (data.notes || []).forEach((x, i) => { if (!x || typeof x.text !== 'string' || !x.text) err(`notes[${i}].text`, 'required string'); });
+  if (data.asked !== undefined && (!Array.isArray(data.asked) || data.asked.some((k) => typeof k !== 'string'))) err('asked', 'list of question keys');
   return errors;
 }
 
@@ -252,6 +256,60 @@ function stageOp(data, op, at) {
   return text;
 }
 
+// What is still to ask, in the order of an interview: frame the case (use case, trigger, end, team, stages), then
+// stage by stage in flow order (steps, who, work, wait, tools, %C&A, AI, what slows), then rework, then the
+// read-back (stages and items to confirm, hypotheses, ideas for later). Each question has a stable key; a key in
+// data.asked was asked and got no answer ("we don't know", "no AI there"), so it is not asked again.
+function questionsFor(data) {
+  const asked = new Set(data.asked || []), out = [];
+  const q = (key, phase, text, at = {}) => { if (!asked.has(key)) out.push({ key, phase, ...at, question: text }); };
+  const c = data.case || {}, stages = data.stages || [], loops = data.loops || [];
+  const empty = (v) => v == null || v === '' || (Array.isArray(v) && !v.length);
+  if (empty(c.title)) q('case:title', 'frame', 'Which real piece of work do we follow, from the request to production (a recent one that reached production)?');
+  if (empty(c.trigger)) q('case:trigger', 'frame', 'What starts the work on it: the request, the event or the decision?');
+  if (empty(c.end)) q('case:end', 'frame', 'When is the value delivered: what tells you it is done?');
+  if (empty(c.team)) q('case:team', 'frame', 'Who takes part, from the request to production (roles)?');
+  const started = stages.some((s) => s.status === 'confirmed' || (s.steps || []).length || s.work || s.wait);
+  if (!started) q('case:stages', 'frame', `Between that start and that end, are these the stages, in this order: ${stages.map((s) => s.name).join(' → ')}? Any to add, rename, merge or remove?`);
+  stages.forEach((s, si) => {
+    const at = { stage: s.id };
+    const steps = (s.steps || []).filter((x) => x.phase !== 'upstream');
+    if (!(s.steps || []).length) q(`${s.id}:steps`, 'flow', `What happens in ${s.name}, step by step, and who does each step?`, at);
+    // In a stage, first who does each box and its times, then what it receives (%C&A), its AI uses and tools.
+    // A parallel box shares the queue of the one it runs alongside: its wait is not asked.
+    const boxes = (steps.length ? steps : [s]).map((x, bi) => ({ x, first: si === 0 && bi === 0,
+      box: x === s ? s.name : `${x.name} (${s.name})`, k: x === s ? `${s.id}` : `${s.id}/${x.id}`, a: x === s ? at : { ...at, step: x.id } }));
+    for (const { x, box, k, a } of boxes) {
+      if (empty(x === s ? s.actors : x.who)) q(`${k}:who`, 'flow', `Who does ${box}?`, a);
+      if (!x.work) q(`${k}:work`, 'flow', `How long does ${box} take when someone works on it (working time, not elapsed)?`, a);
+      if (!x.wait && !x.parallel) q(`${k}:wait`, 'flow', `How long does the work wait before ${box} starts?`, a);
+    }
+    for (const { x, first, box, k, a } of boxes) {
+      if (!first && x.ca === undefined) q(`${k}:ca`, 'flow', `Of what ${box} receives, how much can be used as is, without going back (%)?`, a);
+      if (empty(x.ai)) q(`${k}:ai`, 'flow', `Is AI used in ${box}? For what, and who checks what it produces?`, a);
+      if (empty(x.tools)) q(`${k}:tools`, 'flow', `Which tools are used for ${box}?`, a);
+    }
+    if (![s, ...(s.steps || [])].some((x) => (x.markers || []).length)) q(`${s.id}:markers`, 'flow', `In ${s.name}, what slows the work down, hurts, is done twice, or got faster?`, at);
+  });
+  if (!loops.length) q('case:loops', 'rework', 'What comes back for rework, from which step to which, how often and at what cost?');
+  loops.forEach((l) => {
+    const at = { loop: l.id || null };
+    if (empty(l.count)) q(`loop:${l.id}:count`, 'rework', `How often does "${l.label || l.id}" happen?`, at);
+    if (!l.cost) q(`loop:${l.id}:cost`, 'rework', `What does one round of "${l.label || l.id}" cost in time?`, at);
+  });
+  stages.forEach((s) => s.status !== 'confirmed' && q(`${s.id}:confirm`, 'check', `Is ${s.name} as on the map what really happened on this case?`, { stage: s.id }));
+  stages.forEach((s) => [s, ...(s.steps || [])].forEach((x) => {
+    const a = x === s ? { stage: s.id } : { stage: s.id, step: x.id }, k = x === s ? s.id : `${s.id}/${x.id}`;
+    if (x !== s && x.status === 'assumed') q(`${k}:confirm`, 'check', `Does "${x.name}" really happen on this case?`, a);
+    (x.ai || []).forEach((u) => u.confirm && q(`${k}:ai:${u.label}`, 'check', `Confirm the AI use "${u.label}"?`, a));
+    (x.markers || []).forEach((m) => m.confirm && q(`${k}:marker:${m.text}`, 'check', `Confirm "${m.text}" (${m.kind})?`, a));
+  }));
+  loops.forEach((l) => l.confirm && q(`loop:${l.id}:confirm`, 'check', `Confirm the rework "${l.label || l.id}"?`, { loop: l.id || null }));
+  (data.hypotheses || []).forEach((h) => (h.status || 'open') === 'open' && q(`hypothesis:${h.id}`, 'check', `Does what was said confirm or refute: "${h.text}"?`, { hypothesis: h.id }));
+  if (!(data.parking || []).length) q('case:parking', 'check', 'Any idea for doing it differently, to note for later?');
+  return out;
+}
+
 // The figures a page shows, computed once here so every page (whatever its design) shows the same numbers.
 // Times are in working days. A stage's times are its own when it has no sub-steps, else its sub-steps':
 // a group of parallel sub-steps (a sub-step marked parallel runs alongside the one before) counts once,
@@ -338,7 +396,7 @@ const jsonTag = (id, v) => `<script id="${id}" type="application/json">${JSON.st
 
 const [cmd, fileArg] = process.argv.slice(2);
 if (!cmd || !fileArg) {
-  console.error('usage: vsm.mjs <new|validate|outline|patch|detail|summary|embed|import> <file> [--ops <json>] [--stage <id> --steps <json> [--to <id>]] [--page <page.html>] [--output <file>] [--force] [--text]');
+  console.error('usage: vsm.mjs <new|validate|outline|patch|detail|summary|questions|embed|import> <file> [--ops <json>] [--stage <id> --steps <json> [--to <id>]] [--page <page.html>] [--output <file>] [--force] [--text]');
   process.exit(2);
 }
 const file = resolve(fileArg);
@@ -349,7 +407,8 @@ if (cmd === 'new') {
   const names = given.length ? given : STARTER_STAGES;
   if (!arg('--title')) { console.error('new needs --title [--stages "<Stage 1>,<Stage 2>,…"]'); process.exit(2); }
   const stages = names.map((n) => ({ id: slug(n), name: n, status: 'assumed', work: null, wait: null, ai: [], markers: [] }));
-  const data = { case: { client: arg('--client') || '', title: arg('--title'), trigger: '', end: '', team: [], stages: stages.map((x) => x.id) }, stages, loops: [], parking: [], hypotheses: [], log: [] };
+  const team = String(arg('--team') || '').split(',').map((x) => x.trim()).filter(Boolean);
+  const data = { case: { client: arg('--client') || '', title: arg('--title'), trigger: arg('--trigger') || '', end: arg('--end') || '', team, stages: stages.map((x) => x.id) }, stages, loops: [], parking: [], hypotheses: [], log: [] };
   const errs = validate(data);
   if (errs.length) { console.error(`INVALID:\n- ${errs.join('\n- ')}`); process.exit(1); }
   writeAtomic(file, data);
@@ -441,6 +500,31 @@ if (cmd === 'validate') {
     return 0;
   }); } catch (e) { console.error(`DETAIL FAILED: ${e.message}`); code = 1; }
   if (code) process.exit(code);
+} else if (cmd === 'questions') {
+  const { data } = load(file);
+  if (!data) process.exit(1);
+  // --near: the questions on the box just discussed first, then the rest of its stage, then its loops, then the
+  // neighbouring stages, then everything else in interview order; the conversation stays on what was just said.
+  let all = questionsFor(data);
+  const near = arg('--near');
+  if (near) {
+    const [ns, nx] = near.split('/'), order = (data.stages || []).map((x) => x.id), ni = order.indexOf(ns);
+    const rank = (x) => {
+      if (x.stage === ns && (nx ? x.step === nx : !x.step)) return 0;
+      if (x.stage === ns) return 1;
+      const l = (data.loops || []).find((y) => x.loop && y.id === x.loop);
+      if (l && (l.from === ns || l.to === ns) && (!nx || l.fromStep === nx || l.toStep === nx)) return 2;
+      if (x.stage && ni >= 0 && Math.abs(order.indexOf(x.stage) - ni) === 1) return 3;
+      return 4;
+    };
+    all = all.map((x, i) => ({ x, i, r: rank(x) })).sort((a, b) => a.r - b.r || a.i - b.i).map((y) => y.x);
+  }
+  const n = Number(arg('--limit')) || (process.argv.includes('--text') ? 5 : all.length);
+  if (process.argv.includes('--text')) {
+    if (!all.length) console.log('Nothing left to ask: read the map back with the people.');
+    all.slice(0, n).forEach((x) => console.log(`[${x.phase}] ${x.key} · ${x.question}`));
+    if (all.length > n) console.log(`… ${all.length - n} more (all remaining: ${['frame', 'flow', 'rework', 'check'].map((p) => `${p} ${all.filter((x) => x.phase === p).length}`).join(', ')})`);
+  } else console.log(JSON.stringify({ remaining: all.length, questions: all.slice(0, n) }, null, 2));
 } else if (cmd === 'summary') {
   const { data, errors } = load(file);
   if (errors.length) { console.error(`INVALID ${file}\n- ${errors.join('\n- ')}`); process.exit(1); }

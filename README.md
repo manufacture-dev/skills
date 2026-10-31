@@ -20,8 +20,9 @@ Requires Node 18 or later; no other dependency.
 ## Use
 
 1. Start a map: an empty one with `node .claude/skills/value-stream-map/scripts/vsm.mjs new map.json --title "<the case>" --stages "Story,Build,Review,QA,Release"` (or without `--stages`, from starter stages that you then rename, add, move or remove with Claude as you go), or an existing one: on a published map page, **Continue this map** downloads or copies its data (a `.json` file).
-2. Ask Claude, for example: *"Let's map how our last feature went to production, in map.json"*, or *"Continue the value stream map in map.json: QA says one story in two comes back because the acceptance criteria are not testable."*
-3. Ask for the page, for example: *"Make the page for map.json"* or *"Redo the map's page in our design system"*. The page carries the map's data, so it can be picked up again later.
+2. Let Claude interview you: *"Let's map our last feature that went to production, interview me"*. It frames the case first (the use case, what starts it, when it ends, who takes part, the stages), then asks one question at a time, following what you say, and keeps the list of what is still missing so nothing is forgotten. Everything stays open to change as you go, the stages and the frame included.
+3. Or bring your own input, for example: *"Let's map how our last feature went to production, in map.json"*, or *"Continue the value stream map in map.json: QA says one story in two comes back because the acceptance criteria are not testable."*
+4. Ask for the page, for example: *"Make the page for map.json"* or *"Redo the map's page in our design system"*. The page carries the map's data, so it can be picked up again later.
 
 To try it without your own data, start from the fictional example [`examples/lumen-report-export.json`](examples/lumen-report-export.json) (Lumen Insights, a made-up company: eight stages (one not detailed yet), 21 boxes, an upstream step, parallel work, six rework loops, AI uses at every level, French translations): *"Make the page for examples/lumen-report-export.json"*.
 
