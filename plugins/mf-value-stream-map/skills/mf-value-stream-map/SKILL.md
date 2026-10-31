@@ -2,6 +2,8 @@
 name: mf-value-stream-map
 description: Use when a value stream map of a delivery flow (from the request to production) must be created from scratch, continued, completed, corrected or validated, or turned into a page in any design system (or redesigned in another one): when someone wants to map how their work flows, describes or writes who does what, how long work waits, what comes back, where AI helps, pastes notes or answers from a workshop, or wants to keep working on a map from a page they have.
 license: MIT
+metadata:
+  version: "0.2.0"
 ---
 
 # Value stream map
@@ -106,6 +108,7 @@ This skill carries the code of **mf-i18n** (the same fields and rules); when mf-
 
 ## Model
 
+- `schemaVersion`: the map format (1). `new` writes it; a map without it is read as 1. A map from a newer skill is refused by `validate` with a message: update the skill, never edit the map to pass.
 - `case`: `client`, `title`, `trigger` (what starts the work), `end` (when value is delivered), `team`, `stages` (the stage ids, in order), `leadNote` (optional: a caveat on the lead time, shown under the totals).
 - `stages[]`: the stages of the delivery cycle as the team names them, in order, changed only with `stage` ops (above), which keep `case.stages` (their ids, in order) in step. Fields: `id`, `name`, `status` (`assumed` until people confirm it on the real case, then `confirmed`), `actors`, `tools`, and, while the stage has no sub-steps, `work`, `wait`, `ai[]`, `markers[]`, `ca`, `batch`.
 - `steps[]` inside a stage: `{id, name, who, tools, work, wait, status, parallel, ai[], markers[], ca, caApprox, caSource, batch}`. `id` is required, lowercase-dashes, unique in the stage and stable (loops point at it).

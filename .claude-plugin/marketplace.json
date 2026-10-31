@@ -12,21 +12,18 @@
       "name": "mf-value-stream-map",
       "source": "./plugins/mf-value-stream-map",
       "description": "Build and complete a value stream map with an agent.",
-      "version": "0.2.0",
       "category": "productivity"
     },
     {
       "name": "mf-themes",
       "source": "./plugins/mf-themes",
       "description": "Design systems for a page made by an agent.",
-      "version": "0.2.0",
       "category": "design"
     },
     {
       "name": "mf-i18n",
       "source": "./plugins/mf-i18n",
       "description": "Languages for a page and its data.",
-      "version": "0.2.0",
       "category": "productivity"
     }
   ]

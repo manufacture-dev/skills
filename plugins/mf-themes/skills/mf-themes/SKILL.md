@@ -2,6 +2,8 @@
 name: mf-themes
 description: Use when a page produced by an agent (a map, a report, a dashboard, a readout) must get a design, change design, take an organisation's colours or design system, or when someone wants several designs to choose from ("change the design", "make it look like our site", "propose other styles", "use our charter"). Design systems, not colour swaps: built-in themes, three radically different new directions on the real page, a board to compare them, one kept. Works with any page that keeps its CSS in @layer page.
 license: MIT
+metadata:
+  version: "0.2.0"
 ---
 
 # Themes: design systems for a page

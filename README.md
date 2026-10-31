@@ -39,7 +39,16 @@ To try without your own data: [`examples/lumen-report-export.json`](examples/lum
 
 - `plugins/<plugin>/skills/<skill>/`: each skill, self-contained (its `SKILL.md`, `scripts/`, `assets/`), so it can be copied alone.
 - `lib/`: the code shared by several skills (`themes.mjs`, `i18n.mjs`). `node tools/sync.mjs` copies it into each skill's `scripts/lib/`, and the built-in themes of mf-themes into the skills that ship them; edit the source, never a copy.
-- `node tools/check.mjs` before committing (also run in CI): copies in sync, themes valid, the example map valid and its page built in every design.
+- `node tools/check.mjs` before committing (also run in CI): copies and versions in sync, themes valid, the example map valid and its page built in every design, a changelog line for any change since the last release.
+
+## Versions
+
+One version for the whole library ([CHANGELOG.md](CHANGELOG.md)), in semver, written in each skill (`metadata.version` in `SKILL.md`) and plugin. While it is 0.x, a minor version may change the map format or a command; the changelog says what to do. Maps carry their own format version (`schemaVersion`).
+
+- **Claude Code:** `/plugin marketplace update manufacture-skills`, then update the plugins in `/plugin` (or turn on auto-update for the marketplace there).
+- **Copied skills (Codex, other agents):** copy the folder again; `metadata.version` in its `SKILL.md` says which version you have. A release is a tag `vX.Y.Z` with its notes on GitHub.
+
+To release (maintainers): every change to `plugins/` or `lib/` adds a line under **Unreleased** in the changelog (`tools/check.mjs` refuses otherwise), then `node tools/release.mjs <x.y.z>` sets the version everywhere and prints the commit, tag and release commands.
 
 ## Licence
 

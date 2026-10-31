@@ -58,10 +58,16 @@ function isDuration(v) {
   return v === null || v === undefined || (typeof v === 'object' && typeof v.days === 'number' && v.days >= 0);
 }
 
+// Version of the map format. A map without it is read as 1; raise it when a map written before the change would be
+// misread, and say in CHANGELOG.md how to bring an older map up to date.
+export const SCHEMA_VERSION = 1;
+
 export function validate(data) {
   const errors = [];
   const err = (path, msg) => errors.push(`${path}: ${msg}`);
   if (!data || typeof data !== 'object') return ['root: not an object'];
+  if (data.schemaVersion !== undefined && !(Number.isInteger(data.schemaVersion) && data.schemaVersion >= 1)) err('schemaVersion', 'integer from 1');
+  else if (data.schemaVersion > SCHEMA_VERSION) return [`schemaVersion: this map is format ${data.schemaVersion}, this skill reads up to ${SCHEMA_VERSION}: update the skill`];
   if (!data.case || typeof data.case.title !== 'string') err('case.title', 'required string');
   if (!Array.isArray(data.stages)) { err('stages', 'required array'); return errors; }
   const ids = new Set();
@@ -490,7 +496,7 @@ if (cmd === 'new') {
   const stages = names.map((n) => ({ id: slug(n), name: n, status: 'assumed', work: null, wait: null, ai: [], markers: [] }));
   const team = String(arg('--team') || '').split(',').map((x) => x.trim()).filter(Boolean);
   const languages = String(arg('--languages') || 'en').split(',').map((x) => x.trim()).filter(Boolean);
-  const data = { languages, case: { client: arg('--client') || '', title: arg('--title'), trigger: arg('--trigger') || '', end: arg('--end') || '', team, stages: stages.map((x) => x.id) }, stages, loops: [], parking: [], hypotheses: [], log: [] };
+  const data = { schemaVersion: SCHEMA_VERSION, languages, case: { client: arg('--client') || '', title: arg('--title'), trigger: arg('--trigger') || '', end: arg('--end') || '', team, stages: stages.map((x) => x.id) }, stages, loops: [], parking: [], hypotheses: [], log: [] };
   const errs = validate(data);
   if (errs.length) { console.error(`INVALID:\n- ${errs.join('\n- ')}`); process.exit(1); }
   writeAtomic(file, data);
