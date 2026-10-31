@@ -2,7 +2,16 @@
   "name": "value-stream-map",
   "version": "0.1.0",
   "description": "Continue and complete a value stream map of a delivery flow with an agent: stages and steps, wait and work times, rework loops, %C&A, AI uses; validate, preview, export as a page, import from one.",
-  "author": { "name": "Manufacture" },
+  "author": {
+    "name": "Manufacture"
+  },
   "repository": "https://github.com/manufacture-dev/value-stream-map",
-  "keywords": ["value stream mapping", "vsm", "lean", "sdlc", "flow"]
+  "keywords": [
+    "value stream mapping",
+    "vsm",
+    "lean",
+    "sdlc",
+    "flow"
+  ],
+  "license": "MIT"
 }

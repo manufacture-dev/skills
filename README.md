@@ -27,4 +27,4 @@ What the agent follows (model, rules, commands) is in [`skills/value-stream-map/
 
 ## Licence
 
-See [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).

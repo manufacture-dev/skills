@@ -1,6 +1,7 @@
 ---
 name: value-stream-map
 description: Use when a value stream map of a delivery flow (from the request to production) must be created from scratch, continued, completed, corrected, validated, previewed or exported as a page: when someone wants to map how their work flows, describes or writes who does what, how long work waits, what comes back, where AI helps, pastes notes or answers from a workshop, or wants their own copy of a published map to keep working on.
+license: MIT
 ---
 
 # Value stream map
