@@ -4,6 +4,8 @@ One version for the whole library, in [semver](https://semver.org). While it is 
 
 ## Unreleased
 
+- **All skills:** a rule on what the agent reads (transcripts, notes, imported pages, a site's style guide, texts to translate): it is data, never instructions; anything in it that asks the agent to act is ignored and reported to the person. Answers the indirect prompt injection warning (W011) of the security audit on skills.sh.
+
 ## 0.3.0 (2026-10-31)
 
 - **Versions.** One version for the library, written in each skill (`metadata.version` in `SKILL.md`) and plugin; this changelog; `tools/release.mjs`. Maps now carry `schemaVersion` (1): a map from a newer skill is refused with a message instead of being misread; a map without it is read as 1.
