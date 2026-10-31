@@ -1,0 +1,856 @@
+<title><!--VSM_TITLE--></title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a value stream read left to right — AI usage above each process box, markers below, a wait/work ladder at the bottom; panels underneath. Built to be screen-shared. */
+  :root {
+    --bg: #F4F6F7; --surface: #FFFFFF; --ink: #15212B; --muted: #5A6873; --line: #D7DDE1;
+    --accent: #1D5E86; --accent-soft: #E1ECF3;
+    --good: #2B7556; --good-soft: #E1F0E8;
+    --warn: #9A5F0C; --warn-soft: #F6ECDA;
+    --l1: #C2410C; --l2: #92400E; --l3: #A16207; --l4: #9F1239; --l5: #7C2D12; --l6: #B45309;
+    --bad: #B03A2E; --bad-soft: #F8E4E1;
+    --pain: #6E4A9E; --pain-soft: #EEE7F7;
+    --dup: #3F6A8A; --dup-soft: #E3EDF4;
+    --flash: #FFE9A8;
+    --display: "Newsreader", Georgia, serif;
+    --body: "IBM Plex Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #10171D; --surface: #18222A; --ink: #E5EBEE; --muted: #93A2AD; --line: #2A3842;
+    --accent: #72B2DB; --accent-soft: #1A2E3B; --good: #6CC79D; --good-soft: #15302A;
+    --warn: #E2A84F; --warn-soft: #382A15; --bad: #EE8577; --bad-soft: #3A1E1A;
+    --l1: #FB923C; --l2: #D6A26B; --l3: #FACC15; --l4: #FB7185; --l5: #F0A27A; --l6: #FBBF24;
+    --pain: #B79BE0; --pain-soft: #2A2238; --dup: #8DB6D4; --dup-soft: #1B2A36; --flash: #5A4A12; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg: #10171D; --surface: #18222A; --ink: #E5EBEE; --muted: #93A2AD; --line: #2A3842;
+    --accent: #72B2DB; --accent-soft: #1A2E3B; --good: #6CC79D; --good-soft: #15302A;
+    --warn: #E2A84F; --warn-soft: #382A15; --bad: #EE8577; --bad-soft: #3A1E1A;
+    --l1: #FB923C; --l2: #D6A26B; --l3: #FACC15; --l4: #FB7185; --l5: #F0A27A; --l6: #FBBF24;
+    --pain: #B79BE0; --pain-soft: #2A2238; --dup: #8DB6D4; --dup-soft: #1B2A36; --flash: #5A4A12; color-scheme: dark; }
+  :root:not([data-lang="en"]) .t-en { display: none !important; }
+  :root[data-lang="en"] .t-fr { display: none !important; }
+
+  body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14px; line-height: 1.45; margin: 0; }
+  .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 40px; max-width: 1800px; margin: 0 auto; }
+  header { display: grid; grid-template-columns: 1fr auto; gap: 12px 24px; align-items: start; }
+  .eyebrow { font: 500 11px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .live { display: inline-flex; align-items: center; gap: 6px; color: var(--bad); }
+  .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); display: inline-block; }
+  h1 { font-family: var(--display); font-weight: 600; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; margin: 6px 0 6px; text-wrap: balance; }
+  .bounds { color: var(--muted); margin: 0; font-size: 14px; }
+  .bounds b { color: var(--ink); font-weight: 500; }
+  .team { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .team span { font-size: 12px; border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; }
+  .tools { display: flex; gap: 8px; align-items: center; }
+  .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+  .lang button { font: 500 12px/1 var(--mono); padding: 7px 11px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+  .lang button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+  .lang button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0; border-block: 1px solid var(--line); margin: 14px 0 16px; }
+  .totals div { padding: 10px 14px 10px 0; }
+  .totals dt { font: 500 10.5px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .totals dd { margin: 2px 0 0; font: 500 20px/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+  .totals small { display: block; font: 12px/1.3 var(--body); color: var(--muted); }
+
+  .error { background: var(--bad-soft); color: var(--bad); border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; }
+
+  /* Scrolls sideways only: the page keeps the vertical scroll, whatever overflows by a pixel. */
+  .stream-scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; }
+  .stream { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(190px, 1fr); grid-template-rows: auto auto 1fr auto; gap: 0; min-width: min-content; }
+  .col { display: grid; grid-row: span 4; grid-template-rows: subgrid; padding: 0 10px; border-left: 1px dashed var(--line); min-width: 0; }
+  .col:first-child { border-left: 0; padding-left: 0; }
+  .ai { min-height: 64px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; padding-bottom: 8px; }
+  .ai-badge { font-size: 12px; line-height: 1.3; background: var(--accent-soft); color: var(--ink); border-radius: 4px; padding: 5px 7px; }
+  .ai-badge .lvl { display: flex; gap: 2px; margin-bottom: 3px; }
+  .ai-badge .lvl i { width: 14px; height: 4px; border-radius: 1px; background: var(--line); }
+  .ai-badge .lvl i.on { background: var(--accent); }
+  .ai-badge .who { color: var(--muted); font-size: 11px; }
+  .box { background: var(--surface); border: 2px solid var(--ink); border-radius: 4px; padding: 10px 12px; position: relative; }
+  .box.assumed { border-style: dashed; border-color: var(--muted); }
+  .box .num { font: 500 11px/1 var(--mono); color: var(--muted); }
+  .box h2 { font-size: 15px; font-weight: 600; margin: 3px 0 4px; line-height: 1.25; text-wrap: balance; }
+  .box .actors { font-size: 12px; color: var(--ink); }
+  .box .tools-used { font: 11.5px/1.3 var(--mono); color: var(--muted); margin-top: 3px; }
+  .box .tag { position: absolute; top: -9px; right: 8px; font: 500 10px/1 var(--mono); background: var(--bg); color: var(--muted); padding: 2px 4px; }
+  /* Parallel: the border itself turns blue (dashed when still to confirm). */
+  .box.parallel { border-color: var(--accent); }
+  .stream-scroll { scroll-behavior: smooth; }
+  .stream { position: relative; }
+  svg.loops { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+  svg.loops path { fill: none; stroke-width: 2; }
+  svg.loops path.hit { stroke: transparent; stroke-width: 12; pointer-events: stroke; cursor: pointer; }
+  svg.loops .tbc { outline: none; }
+  svg.loops .tbc path.ln { stroke-dasharray: 5 4; }
+  svg.loops .head { stroke: none; }
+  svg.loops g.loop { transition: opacity .2s; }
+  svg.loops.picking g.loop:not(.on) { opacity: .15; }
+  svg.loops g.loop.on path.ln, svg.loops g.loop.fresh path.ln { stroke-width: 3; }
+  svg.loops text { pointer-events: none; }
+  svg.loops .c1 path.ln, svg.loops text.c1 { stroke: var(--l1); } svg.loops .c1 text.cap { fill: var(--l1); } svg.loops .head.c1 { fill: var(--l1); }
+  svg.loops .c2 path.ln, svg.loops text.c2 { stroke: var(--l2); } svg.loops .c2 text.cap { fill: var(--l2); } svg.loops .head.c2 { fill: var(--l2); }
+  svg.loops .c3 path.ln, svg.loops text.c3 { stroke: var(--l3); } svg.loops .c3 text.cap { fill: var(--l3); } svg.loops .head.c3 { fill: var(--l3); }
+  svg.loops .c4 path.ln, svg.loops text.c4 { stroke: var(--l4); } svg.loops .c4 text.cap { fill: var(--l4); } svg.loops .head.c4 { fill: var(--l4); }
+  svg.loops .c5 path.ln, svg.loops text.c5 { stroke: var(--l5); } svg.loops .c5 text.cap { fill: var(--l5); } svg.loops .head.c5 { fill: var(--l5); }
+  svg.loops .c6 path.ln, svg.loops text.c6 { stroke: var(--l6); } svg.loops .c6 text.cap { fill: var(--l6); } svg.loops .head.c6 { fill: var(--l6); }
+  .dchips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+  .dc { font: 600 10px/1.3 var(--mono); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--line); color: var(--muted); }
+  .dc.ca.ok { color: var(--good); border-color: var(--good); }
+  .dc.ca.mid { color: var(--warn); border-color: var(--warn); }
+  .dc.ca.low { color: var(--bad); border-color: var(--bad); background: var(--bad-soft); }
+  .dc.rw { color: var(--warn); border-color: var(--warn-soft); background: var(--warn-soft); }
+  .dc.bt { color: var(--accent); border-color: var(--accent-soft); background: var(--accent-soft); }
+  /* A queue between two boxes: the wait before the next one. */
+  .subrow .q { flex: none; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 1px; width: 40px; color: var(--warn); }
+  .subrow .q i { font-style: normal; font-size: 16px; line-height: 1; }
+  .subrow .q small { font: 600 10px/1.15 var(--mono); text-align: center; }
+  .subrow .q.lead { margin-right: 2px; }
+  section.rework { margin-top: 14px; }
+  section.rework h3 { font: 500 11px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  section.rework h3 small { letter-spacing: 0; text-transform: none; font-family: var(--body); margin-left: 8px; }
+  section.rework ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 6px; }
+  section.rework li { display: flex; gap: 8px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font-size: 12.5px; cursor: pointer; }
+  section.rework li i { flex: none; width: 4px; align-self: stretch; border-radius: 2px; }
+  section.rework li.on { border-color: var(--warn); box-shadow: 0 0 0 2px var(--warn-soft); }
+  section.rework li.tbc { outline: none; border-style: dashed; }
+  section.rework li em { color: var(--muted); font-size: 11.5px; }
+  section.rework li.c1 i { background: var(--l1); }
+  section.rework li.c2 i { background: var(--l2); }
+  section.rework li.c3 i { background: var(--l3); }
+  section.rework li.c4 i { background: var(--l4); }
+  section.rework li.c5 i { background: var(--l5); }
+  section.rework li.c6 i { background: var(--l6); }
+  .loop-detail[hidden] { display: none; }
+  .loop-detail { margin-top: 8px; padding: 8px 12px; border: 1.5px solid var(--warn); border-radius: 6px; background: var(--surface); font-size: 13px; display: grid; gap: 4px; }
+  .box[data-ref], .subbox[data-ref] { cursor: pointer; }
+  svg.loops text { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+  svg.loops text.cap { font: 600 11.5px var(--body); }
+  .col.focus .box { box-shadow: 0 0 0 4px var(--accent-soft), 0 0 0 6px var(--accent); }
+  .box.axis { display: flex; flex-direction: column; padding-bottom: calc(64px + var(--loop-room, 0px)); }
+  .box.axis .bhead { min-height: 44px; }
+  .box.axis .subrow { flex: 1; }
+  .box.axis .bfoot { position: absolute; left: 12px; right: 12px; bottom: 8px; }
+  /* The flow arrow between stages sits on the shared axis (top padding 10 + header 44 + rule 17, footer 64). */
+  .box .flow { position: absolute; left: -17px; top: calc(50% + 3.5px - var(--loop-room, 0px) / 2 + var(--axis-shift, 0px)); transform: translateY(-50%); color: var(--muted); font-size: 14px; }
+  .box:not(.axis) .flow { top: 50%; }
+  .subbox.whole { color: var(--muted); }
+  /* What the agent has just heard, before it is written properly: dashed, short-lived. */
+  .pending { font-size: 12.5px; font-style: italic; color: var(--muted); border: 1.5px dashed var(--accent); border-radius: 4px; padding: 5px 7px; background: var(--accent-soft); }
+  .sum-mk { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .sum-mk .m { padding: 3px 6px; }
+  .sum-mk .m .k { margin: 0; }
+  .sum-mk .why { flex-basis: 100%; font-size: 11px; color: var(--muted); }
+  .stepwrap { position: relative; display: flex; flex-direction: column; }
+  .stepai { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 4px; display: flex; flex-direction: column; gap: 3px; }
+  .stepai .ai-badge { font-size: 11.5px; padding: 4px 6px; }
+  .subbox.whole b { font-weight: 500; font-style: italic; }
+  .subrow { display: flex; align-items: center; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .subgrp { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .subrow .arrow { align-self: center; color: var(--muted); font-size: 14px; flex: none; width: 14px; text-align: center; }
+  .cells { display: flex; gap: 4px; padding: 0 14px; margin-top: 4px; }
+  .cells .cell { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .ai .cells .cell { justify-content: flex-end; }
+  .cells .sp { flex: none; width: 14px; }
+  .for { display: block; font: 600 10px/1.2 var(--mono); color: var(--muted); margin-bottom: 2px; }
+  .subbox .st2 { font: 10.5px/1.3 var(--mono); color: var(--muted); }
+  .subbox { border: 1.5px solid var(--ink); border-radius: 3px; padding: 6px 8px; background: var(--surface); font-size: 12.5px; line-height: 1.3; display: flex; flex-direction: column; gap: 2px; flex: none; }
+  .subbox.assumed { border-style: dashed; border-color: var(--muted); }
+  .subbox.upstream { border-style: dotted; border-color: var(--muted); background: var(--bg); }
+  .subbox .ph { font: 500 9.5px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  section.bystage { margin-top: 14px; }
+  section.bystage h3 { font: 500 11px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  section.bystage h3 small { letter-spacing: 0; text-transform: none; font-family: var(--body); margin-left: 8px; }
+  section.bystage .tw { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+  section.bystage table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  section.bystage th, section.bystage td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  section.bystage th:nth-child(-n+2), section.bystage td:nth-child(-n+2) { text-align: left; }
+  section.bystage th { font: 500 10.5px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  section.bystage tr.top td { background: var(--warn-soft); }
+  section.bystage tr.up td { color: var(--muted); font-style: italic; }
+  section.bystage tfoot td { font-weight: 600; border-bottom: 0; }
+  section.bystage .bar { display: flex; height: 8px; width: 140px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+  section.bystage .bar .bq { background: var(--warn); } section.bystage .bar .bk { background: var(--accent); }
+  section.bystage .unk { color: var(--muted); }
+  section.bystage p.note { margin: 6px 2px 0; font-size: 11.5px; color: var(--muted); }
+  .subbox b { font-weight: 600; }
+  .subbox .sw { font-size: 11px; color: var(--muted); }
+  .subbox .ptag { font: 600 10.5px/1.2 var(--body); color: var(--accent); }
+  .subbox .minil { margin-top: auto; padding-top: 4px; display: flex; justify-content: space-between; gap: 6px; font: 500 11px var(--mono); }
+  .subbox .mw { color: var(--warn); }
+  .subbox .mk { color: var(--accent); }
+  .lang.view { margin-right: 6px; }
+  button.follow { font: 500 12px/1 var(--mono); padding: 7px 11px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; cursor: pointer; margin-right: 6px; }
+  button.follow[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+  .box .ptag { display: block; font: 600 11px/1.25 var(--body); color: var(--accent); margin-bottom: 4px; }
+  ol.sub { list-style: none; margin: 8px 0 0; padding: 6px 0 0; border-top: 1px solid var(--line); display: grid; gap: 4px; counter-reset: sub; }
+  ol.sub li { font-size: 12px; line-height: 1.3; counter-increment: sub; display: grid; grid-template-columns: auto 1fr; column-gap: 5px; }
+  ol.sub li::before { content: counter(sub, lower-alpha) "."; font: 500 11px var(--mono); color: var(--muted); grid-row: span 3; }
+  ol.sub li.par::before { content: counter(sub, lower-alpha) "‖"; color: var(--accent); }
+  ol.sub li .pmark { display: none; }
+  ol.sub li.assumed b { font-weight: 500; color: var(--muted); font-style: italic; }
+  ol.sub .sw { font-size: 11px; color: var(--muted); }
+  ol.sub .sd { font: 500 11px var(--mono); color: var(--accent); }
+  .box .sum { font: 500 10.5px var(--mono); color: var(--muted); margin-top: 4px; }
+  .markers { display: flex; flex-direction: column; gap: 5px; padding-top: 8px; }
+  /* Macro view: the loop lanes run between the stage boxes and their markers. */
+  .stream.macro .markers { padding-top: calc(8px + var(--loop-room, 0px)); }
+  .m { font-size: 12.5px; line-height: 1.35; border-radius: 4px; padding: 5px 7px; border-left: 3px solid; }
+  .m .k { display: block; font: 500 10px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+  .m .src { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; font-style: italic; }
+  .m.accelerates { background: var(--good-soft); border-color: var(--good); } .m.accelerates .k { color: var(--good); }
+  .m.slows { background: var(--warn-soft); border-color: var(--warn); } .m.slows .k { color: var(--warn); }
+  .m.bottleneck { background: var(--bad-soft); border-color: var(--bad); } .m.bottleneck .k { color: var(--bad); }
+  .m.new-bottleneck { background: var(--surface); border: 1px solid var(--bad); border-left: 3px solid var(--bad); } .m.new-bottleneck .k { color: var(--bad); }
+  .m.pain { background: var(--pain-soft); border-color: var(--pain); } .m.pain .k { color: var(--pain); }
+  .m.new-pain { background: var(--surface); border: 1px solid var(--pain); border-left: 3px solid var(--pain); } .m.new-pain .k { color: var(--pain); }
+  .m.duplicate { background: var(--dup-soft); border-color: var(--dup); } .m.duplicate .k { color: var(--dup); }
+  .m.not-done { background: transparent; border: 1px dashed var(--muted); border-left: 3px dashed var(--muted); } .m.not-done .k { color: var(--muted); }
+  .tbc { outline: 1px dashed var(--muted); outline-offset: 2px; }
+  .tbc-tag { display: inline-block; font: 500 9.5px/1 var(--mono); color: var(--muted); margin-left: 4px; text-transform: uppercase; letter-spacing: .06em; }
+  .gaps li { color: var(--ink); }
+  .ladder { margin-top: 12px; font: 500 12px/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+  .ladder .wait { border-top: 2px solid var(--warn); padding: 4px 0 10px; color: var(--warn); }
+  .ladder .work { border-bottom: 2px solid var(--accent); padding: 0 0 4px; color: var(--accent); margin-left: 30%; }
+  .ladder .unk { color: var(--muted); }
+
+  .panels.top { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, .8fr); }
+  @media (max-width: 900px) { .panels.top { grid-template-columns: 1fr; } }
+  .panel.gaps ul.cols2 { columns: 2 280px; column-gap: 24px; margin: 0; padding-left: 18px; }
+  .panel.gaps ul.cols2 li { break-inside: avoid; }
+  details.readall { margin-top: 16px; }
+  details.readall > summary { cursor: pointer; font: 500 11px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 8px 0; }
+  details.readall .panels.ref { margin-top: 6px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr); }
+  @media (max-width: 900px) { details.readall .panels.ref { grid-template-columns: 1fr; } }
+  .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 22px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; min-width: 0; }
+  .panel h3 { font: 500 11px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  .panel ul { margin: 0; padding-left: 18px; font-size: 13px; }
+  .panel li { margin-bottom: 4px; }
+  .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .legend .m { font-size: 11.5px; padding: 3px 6px; }
+  .legend.ai { grid-template-columns: 1fr; }
+  .panel.read { grid-column: auto; }
+  @media (max-width: 640px) { .panel.read { grid-column: auto; } }
+  .panel.read dl { display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; margin: 0; font-size: 12.5px; }
+  .panel.read dt { font: 600 11px/1.5 var(--mono); color: var(--warn); white-space: nowrap; }
+  .panel.read dd { margin: 0; color: var(--ink); }
+  .hyp li b { font-family: var(--mono); font-weight: 500; }
+  .st { font: 500 10px/1 var(--mono); padding: 2px 5px; border-radius: 3px; margin-left: 4px; }
+  .st.open { background: var(--warn-soft); color: var(--warn); }
+  .st.confirmed { background: var(--good-soft); color: var(--good); }
+  .st.refuted { background: var(--bad-soft); color: var(--bad); }
+  .st.partial { background: var(--accent-soft); color: var(--accent); }
+  .log li { list-style: none; margin-left: -18px; }
+  .log time { font: 11px var(--mono); color: var(--muted); margin-right: 6px; }
+  .empty { color: var(--muted); font-size: 13px; }
+  .dbtns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+  .dbtns button { font: 500 12px/1 var(--mono); padding: 7px 11px; border: 1px solid var(--line); background: var(--surface); color: var(--accent); border-radius: 999px; cursor: pointer; }
+  .dbtns button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dmsg { color: var(--muted); font-size: 12px; }
+  .dcopy { width: 100%; min-height: 120px; margin-top: 8px; font: 12px/1.4 var(--mono); }
+
+  .flash { animation: flash 2.4s ease-out; }
+  @keyframes flash { 0% { box-shadow: 0 0 0 4px var(--flash); background-color: var(--flash); } 100% { box-shadow: 0 0 0 0 transparent; } }
+  @media (prefers-reduced-motion: reduce) { .flash { animation: none; outline: 2px solid var(--flash); } }
+  @media (max-width: 640px) { header { grid-template-columns: 1fr; } .totals { grid-template-columns: 1fr 1fr; } }
+</style>
+
+<div class="wrap" id="app"><p class="empty">Chargement de la carte…</p></div>
+<!--VSM_DATA-->
+<script>
+(function () {
+  var root = document.documentElement;
+  var KIND = {
+    'accelerates': ['L’IA accélère', 'AI speeds up'],
+    'slows': ['Ralentit', 'Slows down'],
+    'bottleneck': ['Goulot', 'Bottleneck'],
+    'new-bottleneck': ['Nouveau goulot', 'New bottleneck'],
+    'pain': ['Irritant', 'Pain point'],
+    'new-pain': ['Nouvel irritant', 'New pain point'],
+    'duplicate': ['Doublon', 'Duplicated work'],
+    'not-done': ['Pas fait', 'Not done']
+  };
+  var LEVEL = {
+    'assistant': [1, 'Assistant à la demande', 'On-demand assistant'],
+    'tooled': [2, 'Étape outillée', 'Tooled step'],
+    'prepares': [3, 'L’agent prépare, l’humain valide', 'Agent prepares, human approves'],
+    'chains': [4, 'L’agent enchaîne, l’humain supervise', 'Agent chains steps, human supervises']
+  };
+  var HST = { open: ['à tester', 'to test'], confirmed: ['confirmée', 'confirmed'], refuted: ['infirmée', 'refuted'], partial: ['en partie', 'partly'] };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function t(fr, en) { return '<span class="t-fr">' + fr + '</span><span class="t-en">' + en + '</span>'; }
+  // Map content is written in English during the session; i18n.fr maps each English text to its French
+  // version. T() gives the text in the page language (render reruns on a language change).
+  var I18N = {};
+  function T(s) { return (s && root.getAttribute('data-lang') !== 'en' && I18N[s]) || s; }
+  function dur(d) {
+    if (!d) return null;
+    var tag = d.felt ? ' ◌' : '';
+    if (d.text) return (d.approx ? '~' : '') + T(d.text) + tag;
+    var v = d.days, s;
+    if (v < 1) { var h = Math.round(v * 8 * 10) / 10; s = (root.getAttribute('data-lang') === 'en' ? h : String(h).replace('.', ',')) + ' h'; }
+    // Days follow the page language (j / d): durations also go into attributes and SVG text, so not t().
+    else { var n = Math.round(v * 10) / 10; s = (root.getAttribute('data-lang') === 'en' ? n + ' d' : String(n).replace('.', ',') + ' j'); }
+    return (d.approx ? '~' : '') + s + tag;
+  }
+  function durBoth(days) {
+    // French decimals take a comma.
+    if (days < 1) { var h = Math.round(days * 80) / 10; return t(String(h).replace('.', ',') + ' h', h + ' h'); }
+    var n = Math.round(days * 10) / 10; return t(String(n).replace('.', ',') + ' j', n + ' d');
+  }
+
+  // Display: "detail" draws each stage's sub-steps as boxes in line (parallel ones stacked), "macro" one box
+  // per stage. "Follow" scrolls to the stage being discussed (now.stage) and highlights it. Per viewer.
+  function pref(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
+  function setPref(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  var MODE = pref('vsm-view', 'detail'), FOLLOW = pref('vsm-follow', 'on') === 'on', lastData = null, lastErrors = null, lastFocus = null, ENDED = false;
+  var prev = {};
+  function sigs(data) {
+    var m = {};
+    (data.stages || []).forEach(function (s) {
+      m['s:' + s.id] = JSON.stringify([s.name, s.actors, s.tools, s.status, s.work, s.wait]);
+      (s.ai || []).forEach(function (a) { m['a:' + s.id + ':' + a.label] = JSON.stringify(a); });
+      (s.markers || []).forEach(function (k) { m['m:' + s.id + ':' + k.kind + ':' + k.text] = '1'; });
+      (s.steps || []).forEach(function (x) {
+        m['st:' + s.id + ':' + x.name] = JSON.stringify([x.name, x.who, x.work, x.wait, x.status, x.parallel]);
+        (x.ai || []).forEach(function (a) { m['a:' + s.id + '/' + x.name + ':' + a.label] = JSON.stringify(a); });
+        (x.markers || []).forEach(function (k) { m['m:' + s.id + '/' + x.name + ':' + k.kind + ':' + k.text] = '1'; });
+      });
+    });
+    (data.loops || []).forEach(function (l, j) { m['l:' + j] = JSON.stringify(l); });
+    (data.parking || []).forEach(function (p) { m['p:' + (p.text || p)] = '1'; });
+    (data.hypotheses || []).forEach(function (h) { m['h:' + h.id] = JSON.stringify(h); });
+    return m;
+  }
+  function fl(key, cur) { return prev.__ready && prev[key] !== cur[key] ? ' flash' : ''; }
+
+  function render(data, errors) {
+    I18N = (data.i18n && data.i18n.fr) || {};
+    var cur = sigs(data);
+    var c = data.case || {};
+    var stages = data.stages || [];
+    // A stage's times: its own work and wait when given; otherwise its sub-steps' (their waits count as
+    // waiting inside the stage). Items marked parallel run alongside the one before them: a group of
+    // parallel items counts once, for its longest.
+    function groups(list) {
+      var g = [];
+      list.forEach(function (x) { if (x.parallel && g.length) g[g.length - 1].push(x); else g.push([x]); });
+      return g;
+    }
+    function maxOf(g, key) { return Math.max.apply(null, g.map(function (x) { return x[key] ? x[key].days : 0; })); }
+    // Sub-steps marked phase "upstream" (discovery before the case starts) are drawn but kept out of the
+    // stage's times and of the stream's totals; upstreamTimes() gives theirs.
+    function inFlow(x) { return x.phase !== 'upstream'; }
+    function upstreamTimes() {
+      var w = 0, q = 0, n = 0;
+      stages.forEach(function (s) { groups((s.steps || []).filter(function (x) { return !inFlow(x); })).forEach(function (g) { n += g.length; w += maxOf(g, 'work'); q += maxOf(g, 'wait'); }); });
+      return { work: w, wait: q, n: n };
+    }
+    function times(s) {
+      var st = (s.steps || []).filter(inFlow), hasSub = st.some(function (x) { return x.work || x.wait; });
+      if (s.work || !hasSub) return { work: s.work ? s.work.days : 0, wait: s.wait ? s.wait.days : 0, known: !!(s.work && s.wait) };
+      var w = 0, q = s.wait ? s.wait.days : 0;
+      groups(st).forEach(function (g) { w += maxOf(g, 'work'); q += maxOf(g, 'wait'); });
+      return { work: w, wait: q, known: st.every(function (x) { return x.work; }), fromSteps: true };
+    }
+    var work = 0, wait = 0, knownN = 0;
+    groups(stages).forEach(function (g) {
+      var ts = g.map(times);
+      work += Math.max.apply(null, ts.map(function (x) { return x.work; }));
+      wait += Math.max.apply(null, ts.map(function (x) { return x.wait; }));
+      ts.forEach(function (x) { if (x.known) knownN++; });
+    });
+    var known = { length: knownN };
+    var unknown = stages.length - known.length;
+    var lead = work + wait;
+    var eff = lead > 0 ? Math.round(work / lead * 100) : null;
+    var caVals = []; stages.forEach(function (x) { if ((x.steps || []).length) x.steps.forEach(function (y) { if (typeof y.ca === 'number') caVals.push(y.ca); }); else if (typeof x.ca === 'number') caVals.push(x.ca); });
+    var caN = caVals.length, rolledCA = caN ? Math.round(caVals.reduce(function (m, v) { return m * v / 100; }, 1) * 100) : null;
+    // Incomplete stages (some box without duration), and among them those with no duration at all.
+    var empty = stages.filter(function (x) { var m = times(x); return !m.work && !m.wait; }).length;
+    var partial = unknown > 0 ? '<small>' + t(unknown + ' étape(s) incomplète(s)' + (empty ? ', dont ' + empty + ' sans aucune durée' : ''), unknown + ' incomplete stage(s)' + (empty ? ', ' + empty + ' with no duration at all' : '')) + '</small>' : '<small>&nbsp;</small>';
+
+    var h = [];
+    if (ENDED) h.push('<div class="error" role="status">' + t('Séance terminée : cette page ne se met plus à jour.', 'Session ended: this page no longer updates.') + '</div>');
+    if (errors && errors.length) h.push('<div class="error" role="alert">' + t('Dernière modification invalide, version précédente affichée : ', 'Last change is invalid, showing the previous version: ') + esc(errors[0]) + '</div>');
+    h.push('<header><div><div class="eyebrow">' + esc(c.client || '') + ' · ' + t('Chaîne de valeur du SDLC', 'SDLC value stream') +
+      (ENDED ? ' · ' + t('séance terminée', 'session ended') : window.VSM_LIVE ? ' <span class="live"><i></i>' + t('en direct', 'live') + '</span>' : '') + '</div>' +
+      '<h1>' + esc(T(c.title)) + '</h1>' +
+      '<p class="bounds">' + t('Déclencheur : ', 'Trigger: ') + '<b>' + esc(T(c.trigger) || '…') + '</b> → ' + t('Fin réelle : ', 'Real end: ') + '<b>' + esc(T(c.end) || '…') + '</b></p>' +
+      '<div class="team">' + (c.team || []).map(function (p) { return '<span>' + esc(T(p)) + '</span>'; }).join('') + '</div></div>' +
+      '<div class="tools"><div class="lang view" role="group" aria-label="Vue / View"><button type="button" data-view="macro" aria-pressed="' + (MODE === 'macro') + '">' + t('Macro', 'Macro') + '</button><button type="button" data-view="detail" aria-pressed="' + (MODE === 'detail') + '">' + t('Détaillée', 'Detailed') + '</button></div>' +
+      (window.VSM_LIVE ? '<button type="button" class="follow" aria-pressed="' + FOLLOW + '">' + t('Suivre', 'Follow') + '</button>' : '') +
+      '<div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-set="fr" id="vsm-fr">FR</button><button type="button" data-set="en" id="vsm-en">EN</button></div></div></header>');
+    h.push('<dl class="totals">' +
+      '<div><dt>' + t('Délai total', 'Lead time') + '</dt><dd>' + (lead ? durBoth(lead) : '—') + '</dd>' + partial + (c.leadNote ? '<small>' + esc(T(c.leadNote)) + '</small>' : '') + '</div>' +
+      '<div><dt>' + t('Temps de travail', 'Work time') + '</dt><dd>' + (work ? durBoth(work) : '—') + '</dd><small>&nbsp;</small></div>' +
+      '<div><dt>' + t('Temps d’attente', 'Waiting time') + '</dt><dd>' + (wait ? durBoth(wait) : '—') + '</dd><small>&nbsp;</small></div>' +
+      '<div><dt>' + t('Efficacité du flux', 'Flow efficiency') + '</dt><dd>' + (eff !== null ? eff + ' %' : '—') + '</dd><small>' + t('travail ÷ délai total', 'work ÷ lead time') + '</small></div>' +
+      // With no box measured, say so instead of a bare dash: the rework is still visible as the loops on the map.
+      '<div><dt>' + t('Complet et exact, cumulé', 'Rolled complete & accurate') + '</dt><dd>' + (rolledCA !== null ? rolledCA + ' %' : t('Non mesuré', 'Not measured')) + '</dd><small>' +
+      (caN ? t('part du travail qui traverse sans reprise · ' + caN + ' case(s) mesurée(s)', 'share of work that goes through without rework · ' + caN + ' box(es) measured')
+           : t('pas demandé pendant l’atelier ; les reprises sont les boucles de retour sur la carte', 'not asked in the workshop; rework shows as the loops back on the map')) + '</small></div></dl>');
+
+    // %C&A (percent complete and accurate: the share of what a box receives that it can use without going back),
+    // the rework it sends back (↩) and its batch size, in the box's own data line.
+    function caClass(v) { return v >= 90 ? 'ok' : v >= 70 ? 'mid' : 'low'; }
+    function dataChips(x, ref) {
+      var out = (data.loops || []).filter(function (l) { return (l.fromStep ? l.from + '/' + l.fromStep : l.from) === ref && !(l.from === l.to && (l.fromStep || '') === (l.toStep || '')); }).length;
+      var it = (data.loops || []).filter(function (l) { return l.from === l.to && (l.fromStep || '') === (l.toStep || '') && (l.fromStep ? l.from + '/' + l.fromStep : l.from) === ref; })[0];
+      var c = [];
+      if (typeof x.ca === 'number') c.push('<span class="dc ca ' + caClass(x.ca) + '" title="Complet et exact : part de ce qui arrive utilisable sans reprise / Complete and accurate: share of what arrives usable without rework">C&A ' + (x.caApprox ? '~' : '') + x.ca + ' %</span>');
+      if (out) c.push('<span class="dc rw">↩ ' + out + '</span>');
+      if (it) c.push('<span class="dc rw">↻ ' + esc(T(it.count || '')) + '</span>');
+      if (x.batch) c.push('<span class="dc bt">' + t('lot : ', 'batch: ') + esc(T(x.batch)) + '</span>');
+      return c.length ? '<div class="dchips">' + c.join('') + '</div>' : '';
+    }
+    h.push('<div class="stream-scroll"><div class="stream ' + MODE + '">');
+    stages.forEach(function (s, i) {
+      // AI uses and markers belong to the box where the work happens: a sub-step, or the stage itself
+      // when it has no sub-steps yet. Keys carry the sub-step name so a change flashes in the right place.
+      function badges(list, key, prefix) {
+        return (list || []).map(function (a) {
+          var L = LEVEL[a.level] || [0, a.level, a.level];
+          var notches = [1, 2, 3, 4].map(function (n) { return '<i class="' + (n <= L[0] ? 'on' : '') + '"></i>'; }).join('');
+          return '<div class="ai-badge' + (a.confirm ? ' tbc' : '') + fl('a:' + key + ':' + a.label, cur) + '" title="' + esc(L[1]) + '"><div class="lvl">' + notches + (a.confirm ? '<span class="tbc-tag">' + t('à confirmer', 'to confirm') + '</span>' : '') + '</div>' +
+            (prefix ? '<span class="for">' + esc(T(prefix)) + '</span>' : '') + esc(T(a.label)) + (a.who ? '<div class="who">' + esc(T(a.who)) + '</div>' : '') + '</div>';
+        }).join('');
+      }
+      function marks(list, key, prefix) {
+        return (list || []).map(function (m) {
+          var K = KIND[m.kind] || [m.kind, m.kind];
+          return '<div class="m ' + esc(m.kind) + (m.confirm ? ' tbc' : '') + fl('m:' + key + ':' + m.kind + ':' + m.text, cur) + '"><span class="k">' + t(K[0], K[1]) + (m.confirm ? '<span class="tbc-tag">' + t('à confirmer', 'to confirm') + '</span>' : '') + '</span>' +
+            (prefix ? '<span class="for">' + esc(T(prefix)) + '</span>' : '') + esc(T(m.text)) + (m.source ? '<span class="src">' + esc(T(m.source)) + '</span>' : '') + '</div>';
+        }).join('');
+      }
+      var steps = s.steps || [];
+      var detailMode = MODE === 'detail' && steps.length;
+      var gsl = detailMode ? groups(steps) : [];
+      // One cell per column of sub-steps, aligned with the boxes; stacked (parallel) steps name their box.
+      function cells(fn) {
+        return '<div class="cells">' + gsl.map(function (g) {
+          return '<div class="cell">' + g.map(function (x) { return fn(x, g.length > 1 ? x.name : null); }).join('') + '</div>';
+        }).join('<span class="sp" aria-hidden="true"></span>') + '</div>';
+      }
+      var ai, mk;
+      if (detailMode) {
+        ai = badges(s.ai, s.id); // each sub-step's AI uses sit right above its own box
+        mk = marks(s.markers, s.id) + cells(function (x, pre) { return marks(x.markers, s.id + '/' + x.name, pre); });
+      } else {
+        // Macro view: the stage's own items in full; its sub-steps' items, which are not drawn, as a summary:
+        // one AI badge (highest level reached, number of uses) and one chip per marker kind with its count.
+        ai = badges(s.ai, s.id);
+        mk = marks(s.markers, s.id);
+        var subAi = [].concat.apply([], steps.map(function (x) { return x.ai || []; }));
+        var subMk = [].concat.apply([], steps.map(function (x) { return x.markers || []; }));
+        if (subAi.length) {
+          var top = Math.max.apply(null, subAi.map(function (a) { return (LEVEL[a.level] || [0])[0]; }));
+          var tbcA = subAi.some(function (a) { return a.confirm; });
+          ai += '<div class="ai-badge sum-ai' + (tbcA ? ' tbc' : '') + '"><div class="lvl">' + [1, 2, 3, 4].map(function (n) { return '<i class="' + (n <= top ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
+            t('IA dans les sous-étapes · ', 'AI in the sub-steps · ') + subAi.length + ' ' + t(subAi.length > 1 ? 'usages' : 'usage', subAi.length > 1 ? 'uses' : 'use') +
+            '<div class="who">' + t('jusqu’à : ', 'up to: ') + t((LEVEL[Object.keys(LEVEL).filter(function (k) { return LEVEL[k][0] === top; })[0]] || [0, ''])[1], (LEVEL[Object.keys(LEVEL).filter(function (k) { return LEVEL[k][0] === top; })[0]] || [0, '', ''])[2]) + '</div></div>';
+        }
+        if (subMk.length) {
+          var byKind = {};
+          subMk.forEach(function (m) { byKind[m.kind] = (byKind[m.kind] || 0) + 1; });
+          mk += '<div class="sum-mk">' + Object.keys(KIND).filter(function (k) { return byKind[k]; }).map(function (k) {
+            return '<span class="m ' + k + '"><span class="k">' + t(KIND[k][0], KIND[k][1]) + ' ×' + byKind[k] + '</span></span>';
+          }).join('') + '<span class="why">' + t('dans les sous-étapes · vue détaillée pour le détail', 'in the sub-steps · detailed view for more') + '</span></div>';
+        }
+      }
+      var loops = '';
+      var tm = times(s);
+      var w = dur(s.wait) || (tm.fromSteps && tm.wait ? dur({ days: tm.wait, approx: true }) : null), k = dur(s.work) || (tm.fromSteps && tm.work ? dur({ days: tm.work, approx: true }) : null);
+      var detail = MODE === 'detail' && (s.steps || []).length;
+      var gs = detail ? groups(s.steps) : [];
+      var focus = window.VSM_LIVE && data.now && data.now.stage === s.id;
+      // Detailed view: every stage puts its boxes on one horizontal axis, shared by the whole stream
+      // (fixed header above, footer kept out of the way); a stage not detailed yet shows one box there.
+      function subbox(x) {
+        var sw = dur(x.wait), sk = dur(x.work);
+        // AI uses of the sub-step sit right above its white box, out of the flow: the white boxes alone
+        // set the axis; layoutBadges() then makes room for them (see below).
+        var b = badges(x.ai, s.id + '/' + x.name);
+        return '<div class="stepwrap">' + (b ? '<div class="stepai">' + b + '</div>' : '') + subboxOnly(x, sw, sk) + '</div>';
+      }
+      function subboxOnly(x, sw, sk) {
+        return '<div class="subbox' + (x.status === 'assumed' ? ' assumed' : '') + (inFlow(x) ? '' : ' upstream') + fl('st:' + s.id + ':' + x.name, cur) + '" data-ref="' + esc(s.id + '/' + (x.id || x.name)) + '">' +
+          (inFlow(x) ? '' : '<span class="ph">' + t('Phase amont', 'Upstream phase') + '</span>') + '<b>' + esc(T(x.name)) + '</b>' + (x.who ? '<span class="sw">' + esc(T(x.who)) + '</span>' : '') + (x.tools ? '<span class="st2">' + esc(T(x.tools)) + '</span>' : '') +
+          dataChips(x, s.id + '/' + (x.id || x.name)) +
+          '<div class="minil"><span class="mw"></span><span class="mk">' + (sk ? esc(sk) : '?') + '</span></div></div>';
+      }
+      // The wait before a box is drawn as a queue between boxes, on the axis (▽ and its duration).
+      function queue(g, lead) {
+        var w = null; g.forEach(function (x) { if (x.wait && (!w || x.wait.days > w.days)) w = x.wait; });
+        // Short form in the queue (the wording stays in the box's tooltip and the timeline).
+        return w ? '<span class="q' + (lead ? ' lead' : '') + '" title="' + esc(dur(w)) + '"><i>▽</i><small>' + esc(dur({ days: w.days, approx: w.approx })) + '</small></span>' : (lead ? '' : '<span class="arrow" aria-hidden="true">→</span>');
+      }
+      var row = '';
+      if (MODE === 'detail') {
+        row = detail ? '<div class="subrow">' + queue(gs[0], true) + gs.map(function (g, gi) { return (gi ? queue(g) : '') + '<div class="subgrp">' + g.map(subbox).join('') + '</div>'; }).join('') + '</div>'
+          : '<div class="subrow">' + queue([s], true) + '<div class="subgrp"><div class="subbox whole' + (s.status === 'assumed' ? ' assumed' : '') + '" data-ref="' + esc(s.id) + '"><b>' + t('Pas encore détaillée', 'Not detailed yet') + '</b>' +
+            (s.actors ? '<span class="sw">' + esc(T(s.actors)) + '</span>' : '') + (s.tools ? '<span class="st2">' + esc(T(s.tools)) + '</span>' : '') + dataChips(s, s.id) + '</div></div></div>';
+      }
+      var foot = (MODE === 'macro' && (s.steps || []).length ? '<div class="sum">' + s.steps.length + ' ' + t('sous-étapes', 'sub-steps') + '</div>' : '') +
+        (MODE === 'detail' && (s.steps || []).length ? '<div class="sum">' + t('Σ sous-étapes', 'Σ sub-steps') + '</div>' : '') + loops;
+      h.push('<div class="col' + (focus ? ' focus' : '') + '" data-stage="' + esc(s.id) + '" style="grid-column: span ' + Math.max(1, gs.length) + '">' +
+        '<div class="ai">' + ai + '</div>' +
+        '<div class="box' + (MODE === 'detail' ? ' axis' : '') + (s.status === 'assumed' ? ' assumed' : '') + fl('s:' + s.id, cur) + '"' + (MODE === 'macro' ? ' data-ref="' + esc(s.id) + '"' : '') + '>' +
+        (i ? '<span class="flow" aria-hidden="true">→</span>' : '') +
+        (s.status === 'assumed' ? '<span class="tag">' + t('à confirmer', 'to confirm') + '</span>' : '') +
+        '<div class="bhead"><div class="num">' + (i + 1) + '</div><h2>' + esc(T(s.name)) + '</h2>' +
+        (MODE === 'macro' && s.actors ? '<div class="actors">' + esc(T(s.actors)) + '</div>' : '') +
+        (MODE === 'macro' && s.tools ? '<div class="tools-used">' + esc(T(s.tools)) + '</div>' : '') +
+        (MODE === 'macro' ? (function () {
+          var cas = (s.steps || []).length ? s.steps.filter(function (x) { return typeof x.ca === 'number'; }).map(function (x) { return x.ca; }) : (typeof s.ca === 'number' ? [s.ca] : []);
+          var rolled = cas.length ? Math.round(cas.reduce(function (m, v) { return m * v / 100; }, 1) * 100) : null;
+          var out = (data.loops || []).filter(function (l) { return l.from === s.id && l.to !== s.id; }).length;
+          var inner = (data.loops || []).filter(function (l) { return l.from === s.id && l.to === s.id; }).length;
+          var batches = [].concat(s.batch ? [s.batch] : [], (s.steps || []).filter(function (x) { return x.batch; }).map(function (x) { return x.batch; }));
+          var c = [];
+          if (rolled !== null) c.push('<span class="dc ca ' + caClass(rolled) + '">C&A ' + rolled + ' %</span>');
+          if (out) c.push('<span class="dc rw">↩ ' + out + '</span>');
+          if (inner) c.push('<span class="dc rw">↻ ' + inner + '</span>');
+          batches.forEach(function (b) { c.push('<span class="dc bt">' + t('lot : ', 'batch: ') + esc(T(b)) + '</span>'); });
+          return c.length ? '<div class="dchips">' + c.join('') + '</div>' : '';
+        })() : '') + '</div>' +
+        row + '<div class="bfoot">' + foot + '</div></div>' +
+        '<div class="markers">' + (data.pending || []).filter(function (x) { return x.stage === s.id; }).map(function (x) {
+          return '<div class="pending flash">⋯ ' + esc(T(x.text)) + '</div>';
+        }).join('') + mk + '</div>' +
+        '<div class="ladder"><div class="wait">▽ ' + t('attente', 'waiting') + ' ' + (w ? esc(w) : '<span class="unk">?</span>') + '</div><div class="work">' + t('travail', 'work') + ' ' + (k ? esc(k) : '<span class="unk">?</span>') + '</div></div>' +
+        '</div>');
+    });
+    // Rework loops, from one box to another (or the same box: iterations). The detailed view draws them as
+    // arrows (drawLoops, after render) only for the box or the list line picked; all are listed under the map.
+    function stepName(st, ref) { var x = (st.steps || []).filter(function (y) { return y.id === ref || y.name === ref; })[0]; return x ? x.name : ref; }
+    var sById = {}; stages.forEach(function (x) { sById[x.id] = x; });
+    function endName(sid, ref) { var st = sById[sid]; return st ? esc(T(st.name)) + (ref ? ' › ' + esc(T(stepName(st, ref))) : '') : esc(sid); }
+    h.push('</div></div>');
+    // Rework, listed under the map (the arrows only show for what is picked: a box, or a line of this list).
+    // Days per stage: wait, work, lead time, share of the stream's lead time, flow efficiency, rework, AI uses
+    // and boxes still without a work time; the stage with the longest lead time is highlighted.
+    (function () {
+      var rows = stages.map(function (s, i) {
+        var tm = times(s), st = (s.steps || []).filter(inFlow), lt = tm.work + tm.wait;
+        var miss = st.length ? st.filter(function (x) { return !x.work; }).length : (s.work ? 0 : 1);
+        var out = (data.loops || []).filter(function (l) { return l.from === s.id && l.to !== s.id; }).length;
+        var self = (data.loops || []).filter(function (l) { return l.from === s.id && l.to === s.id; }).length;
+        var ai = (s.ai || []).length + st.reduce(function (m, x) { return m + (x.ai || []).length; }, 0);
+        return { i: i, s: s, wait: tm.wait, work: tm.work, lt: lt, miss: miss, boxes: st.length || 1, out: out, self: self, ai: ai };
+      });
+      var maxLt = Math.max.apply(null, rows.map(function (r) { return r.lt; }).concat([0]));
+      function d(v) { return v ? durBoth(v) : '<span class="unk">—</span>'; }
+      function pct(a, b) { return b > 0 ? Math.round(a / b * 100) + ' %' : '<span class="unk">—</span>'; }
+      var body = rows.map(function (r) {
+        return '<tr' + (r.lt && r.lt === maxLt ? ' class="top"' : '') + '><td>' + (r.i + 1) + '</td><td>' + esc(T(r.s.name)) + '</td><td>' + d(r.wait) + '</td><td>' + d(r.work) + '</td><td>' + d(r.lt) + '</td>' +
+          '<td><div class="bar" title="' + (lead ? Math.round(r.lt / lead * 100) : 0) + ' %"><span class="bq" style="width:' + (lead ? r.wait / lead * 100 : 0) + '%"></span><span class="bk" style="width:' + (lead ? r.work / lead * 100 : 0) + '%"></span></div></td>' +
+          '<td>' + pct(r.lt, lead) + '</td><td>' + pct(r.work, r.lt) + '</td><td>' + (r.out || r.self ? (r.out ? '↩ ' + r.out : '') + (r.out && r.self ? ' ' : '') + (r.self ? '↻ ' + r.self : '') : '<span class="unk">—</span>') + '</td>' +
+          '<td>' + (r.ai || '<span class="unk">—</span>') + '</td><td>' + (r.miss ? r.miss + ' / ' + r.boxes : '<span class="unk">0</span>') + '</td></tr>';
+      }).join('');
+      var up = upstreamTimes();
+      if (up.n) body += '<tr class="up"><td></td><td>' + t('Phase amont (hors délai)', 'Upstream phase (outside the lead time)') + ' · ' + up.n + ' ' + t('cases', 'boxes') + '</td><td>' + d(up.wait) + '</td><td>' + d(up.work) + '</td><td>' + d(up.wait + up.work) + '</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+      h.push('<section class="bystage"><h3>' + t('Jours par étape', 'Days per stage') + ' <small>' + t('jours ouvrés ; ' + '<span style="color:var(--warn)">▇</span>' + ' attente, ' + '<span style="color:var(--accent)">▇</span>' + ' travail, sur le délai total', 'working days; ' + '<span style="color:var(--warn)">▇</span>' + ' waiting, ' + '<span style="color:var(--accent)">▇</span>' + ' work, over the lead time') + '</small></h3><div class="tw"><table><thead><tr>' +
+        '<th>#</th><th>' + t('Étape', 'Stage') + '</th><th>' + t('Attente', 'Waiting') + '</th><th>' + t('Travail', 'Work') + '</th><th>' + t('Délai', 'Lead time') + '</th><th></th><th>' + t('Part du délai', 'Share of lead time') + '</th><th>' + t('Efficacité', 'Efficiency') + '</th><th>' + t('Reprises', 'Rework') + '</th><th>' + t('Usages IA', 'AI uses') + '</th><th>' + t('Cases sans durée', 'Boxes without duration') + '</th></tr></thead>' +
+        '<tbody>' + body + '</tbody><tfoot><tr><td></td><td>' + t('Chaîne entière', 'Whole stream') + '</td><td>' + d(wait) + '</td><td>' + d(work) + '</td><td>' + d(lead) + '</td><td></td><td>100 %</td><td>' + pct(work, lead) + '</td><td>' + ((data.loops || []).length || '') + '</td><td></td><td></td></tr></tfoot></table></div>' +
+        '<p class="note">' + t('Durées saisies seulement : une étape sans durée compte pour 0, les chiffres bougent quand les attentes manquantes arrivent. Efficacité = travail ÷ délai de l’étape.', 'Recorded durations only: a stage without duration counts as 0, so figures move as the missing waits come in. Efficiency = work ÷ the stage’s lead time.') + '</p></section>');
+    })();
+    if ((data.loops || []).length) h.push('<section class="rework"><h3>' + t('Reprises', 'Rework') + ' <small>' + t('cliquer une ligne ou une case pour voir la flèche', 'click a line or a box to see the arrow') + '</small></h3><ul>' + data.loops.map(function (l, j) {
+      var self = l.from === l.to && (l.fromStep || '') === (l.toStep || ''), c = dur(l.cost);
+      return '<li data-pick="' + j + '" class="c' + ((j % 6) + 1) + (l.confirm ? ' tbc' : '') + (picked === j ? ' on' : '') + fl('l:' + j, cur) + '"><i></i><span><b>' + (self ? '↻ ' + endName(l.from, l.fromStep) : '↩ ' + endName(l.from, l.fromStep) + ' → ' + endName(l.to, l.toStep)) + '</b>' +
+        (l.label ? ' · ' + esc(T(l.label)) : '') + (l.count ? ' · <b>' + esc(T(l.count)) + '</b>' : '') + (c ? ' · ' + t('coût', 'cost') + ' ' + esc(c) : '') + (l.source ? ' <em>' + esc(T(l.source)) + '</em>' : '') + (l.confirm ? ' <span class="tbc-tag">' + t('à confirmer', 'to confirm') + '</span>' : '') + '</span></li>';
+    }).join('') + '</ul></section>');
+
+    var legendMk = Object.keys(KIND).map(function (k) { return '<div class="m ' + k + '"><span class="k">' + t(KIND[k][0], KIND[k][1]) + '</span></div>'; }).join('');
+    var legendAi = Object.keys(LEVEL).map(function (k) {
+        var n = LEVEL[k][0];
+        return '<div class="ai-badge"><div class="lvl">' + [1, 2, 3, 4].map(function (i) { return '<i class="' + (i <= n ? 'on' : '') + '"></i>'; }).join('') + '</div>' + t(LEVEL[k][1], LEVEL[k][2]) + '</div>';
+      }).join('');
+    var parking = (data.parking || []).map(function (p) { var x = p.text || p; return '<li class="' + fl('p:' + x, cur).trim() + '">' + esc(T(x)) + (p.who ? ' <span class="empty">· ' + esc(T(p.who)) + '</span>' : '') + '</li>'; }).join('');
+    var hyps = (data.hypotheses || []).map(function (x) {
+      var st = HST[x.status || 'open'] || HST.open;
+      return '<li class="' + fl('h:' + x.id, cur).trim() + '"><b>' + esc(x.id) + '</b> ' + esc(T(x.text)) + '<span class="st ' + esc(x.status || 'open') + '">' + t(st[0], st[1]) + '</span></li>';
+    }).join('');
+    // "To complete": one line per box (a stage, or a sub-step under its stage), its items separated by " · ".
+    var gaps = [];
+    function gapLine(label, items) { if (items.length) gaps.push('<li><b>' + label + '</b> · ' + items.join(' · ') + '</li>'); }
+    stages.forEach(function (s) {
+      var it = [];
+      if ((s.steps || []).length) {
+        var nw = s.steps.filter(function (x) { return !x.work; }).length;
+        if (nw) it.push(nw + ' ' + t('sous-étape(s) sans durée', 'sub-step(s) without duration'));
+      } else {
+        var miss = [];
+        if (!s.wait) miss.push(t('attente', 'wait'));
+        if (!s.work) miss.push(t('travail', 'work'));
+        if (miss.length) it.push(t('manque : ', 'missing: ') + miss.join(', '));
+      }
+      if (s.status === 'assumed') it.push(t('étape à confirmer', 'stage to confirm'));
+      (s.ai || []).concat(s.markers || []).forEach(function (x) { if (x.confirm) it.push(t('à confirmer : ', 'to confirm: ') + esc(T(x.label || x.text))); });
+      gapLine(esc(T(s.name)), it);
+      (s.steps || []).forEach(function (x) {
+        var si = [];
+        if (x.status === 'assumed') si.push(t('à confirmer', 'to confirm'));
+        (x.ai || []).concat(x.markers || []).forEach(function (y) { if (y.confirm) si.push(t('à confirmer : ', 'to confirm: ') + esc(T(y.label || y.text))); });
+        gapLine(esc(T(s.name)) + ' › ' + esc(T(x.name)), si);
+      });
+    });
+    var loopGaps = (data.loops || []).filter(function (l) { return l.confirm; }).map(function (l) { return endName(l.from, l.fromStep) + ' → ' + endName(l.to, l.toStep); });
+    if (loopGaps.length) gaps.push('<li><b>' + t('Reprises', 'Rework') + '</b> · ' + t('à confirmer : ', 'to confirm: ') + loopGaps.join(' · ') + '</li>');
+    // Speaker labels from a transcription tool (Call#1002) are working notes: never shown, even in the log.
+    var unlabel = function (x) { return String(x || '').replace(/\s*\(?\b(?:on |said on |stated on )?Call#\d+\)?/g, '').replace(/\s+#\d{4}\b/g, ''); };
+    var log = (data.log || []).slice(-8).reverse().map(function (l) { return '<li><time>' + esc(l.at || '') + '</time>' + esc(unlabel(l.text)) + '</li>'; }).join('');
+    // Under the map: first what changes (to complete, hypotheses, parking), on one row; then the fixed reference
+    // (legend, AI levels, symbols) in one block, collapsed by default, its state kept per viewer.
+    var readOpen = pref('vsm-read', 'closed') === 'open';
+    h.push('<div class="panels top">' +
+      '<div class="panel gaps wide"><h3>' + t('À compléter', 'To complete') + '</h3>' + (gaps.length ? '<ul class="cols2">' + gaps.join('') + '</ul>' : '<p class="empty">—</p>') + '</div>' +
+      '<div class="panel hyp"><h3>' + t('Ce qu’on regarde sur ce cas', 'What we look at on this case') + '</h3>' + (hyps ? '<ul>' + hyps + '</ul>' : '<p class="empty">—</p>') + '</div>' +
+      '<div class="panel"><h3>' + t('Parking · idées pour la cible', 'Parking · ideas for the target') + '</h3>' + (parking ? '<ul>' + parking + '</ul>' : '<p class="empty">' + t('Les idées de cible sont notées ici, sans être débattues.', 'Target ideas are noted here, without debate.') + '</p>') + '</div>' +
+      '</div>' +
+      '<details class="readall"' + (readOpen ? ' open' : '') + '><summary>' + t('Lire la carte : légende, niveaux d’IA, symboles', 'How to read the map: legend, AI levels, symbols') + '</summary><div class="panels ref">' +
+      '<div class="panel"><h3>' + t('Légende · marqueurs', 'Legend · markers') + '</h3><div class="legend">' + legendMk + '</div></div>' +
+      '<div class="panel"><h3>' + t('Adoption de l’IA · niveaux', 'AI adoption · levels') + '</h3><div class="legend ai">' + legendAi + '</div><p class="empty">' + t('Chaque usage d’IA est posé au-dessus de la case où il sert ; les crans donnent son niveau.', 'Each AI use sits above the box where it is used; the notches give its level.') + '</p></div>' +
+      '<div class="panel read"><h3>' + t('Lire la carte', 'How to read the map') + '</h3><dl>' + [[["\u25bd 2 j","\u25bd 2 d"],"File d\u2019attente : le travail attend avant la case qui suit, personne n\u2019y travaille.","Queue: the work waits before the next box, nobody works on it."],["4 h","Temps de travail de la case : quelqu\u2019un y travaille vraiment.","Work time of the box: someone actually works on it."],["C&A 60 %","Complet et exact (%C&A) : part de ce que la case re\u00e7oit qu\u2019elle peut utiliser sans revenir vers l\u2019\u00e9tape d\u2019avant. Rouge sous 70 %, orange sous 90 %.","Complete and accurate (%C&A): share of what the box receives that it can use without going back to the step before. Red under 70%, amber under 90%."],[["C&A cumul\u00e9","Rolled C&A"],"Produit de tous les %C&A : part du travail qui traverse tout le flux sans aucune reprise.","Rolled %C&A: product of all of them, the share of work that crosses the whole flow without rework."],["\u21a9 2","La case renvoie du travail \u00e0 une case pr\u00e9c\u00e9dente (2 boucles). Cliquer la case pour voir les fl\u00e8ches.","The box sends work back to an earlier box (2 loops). Click the box to see the arrows."],["\u21bb \u00d73","It\u00e9rations sur la m\u00eame case (allers-retours, par exemple avec Claude).","Iterations on the same box (back and forth, for example with Claude)."],[["Lot : sprint","Batch: sprint"],"Le travail avance par lots de cette taille (sprint, train de mise en production).","Work moves in batches of this size (sprint, release train)."],["\u25ad \u25ad","Cases empil\u00e9es : faites en m\u00eame temps ; compt\u00e9es une fois, la plus longue.","Stacked boxes: done at the same time; counted once, the longest."],["\u2504\u2504","Pointill\u00e9s : \u00e0 confirmer (d\u00e9duit, pas encore dit par le groupe).","Dashed: to confirm (inferred, not yet said by the group)."],["~ \u25cc ?","~ estimation \u00b7 \u25cc ressenti, non mesur\u00e9 \u00b7 ? inconnu.","~ estimate \u00b7 \u25cc felt, not measured \u00b7 ? unknown."],["Σ","Σ sous-étapes : les temps de l’étape (sa frise) sont la somme de ses cases.","Σ sub-steps: the stage’s times (its timeline) are the sum of its boxes."],
+ [["Frise","Timeline"],"Sous chaque \u00e9tape : son attente (marron) puis son travail (bleu), somme de ses cases.","Under each stage: its waiting (brown) then its work (blue), summed over its boxes."],[["D\u00e9lai \u00b7 efficacit\u00e9","Lead time \u00b7 efficiency"],"D\u00e9lai total = attente + travail. Efficacit\u00e9 du flux = travail \u00f7 d\u00e9lai total.","Lead time = waiting + work. Flow efficiency = work \u00f7 lead time."]].map(function (r) { var k = Array.isArray(r[0]) ? t(esc(r[0][0]), esc(r[0][1])) : esc(r[0]); return '<dt>' + k + '</dt><dd>' + t(esc(r[1]), esc(r[2])) + '</dd>'; }).join('') + '</dl></div>' +
+      '</div></details>' +
+      '<div class="panels">' +
+      // The agent's log: the latest changes, kept in the export as a record.
+      // The shareable export empties the log (--without-notes): no empty panel then.
+      (!window.VSM_LIVE && log ? '<div class="panel log"><h3>' + t('Dernières modifications', 'Latest changes') + '</h3><ul>' + log + '</ul></div>' : '') +
+      // The facilitator's notes: in the export only, never on the map shared live.
+      (!window.VSM_LIVE && (data.notes || []).length ? '<div class="panel log"><h3>' + t('Notes du facilitateur', 'Facilitator notes') + '</h3><ul>' + data.notes.map(function (x) { return '<li>' + (x.tag ? '<time>' + esc(x.tag) + '</time>' : '') + esc(T(x.text)) + '</li>'; }).join('') + '</ul></div>' : '') +
+      // The map's data, to carry on with an agent (value-stream-map skill): download when the viewer allows it, else copy.
+      (!window.VSM_LIVE ? '<div class="panel export"><h3>' + t('Continuer la carte', 'Continue this map') + '</h3><p class="empty">' + t('Les données de la carte, à reprendre avec un agent (skill value-stream-map).', 'The map data, to carry on with an agent (value-stream-map skill).') + '</p><div class="dbtns">' +
+        (DL ? '<button type="button" data-dl>' + t('Télécharger (JSON)', 'Download (JSON)') + '</button>' : '') +
+        '<button type="button" data-copy>' + t('Copier les données', 'Copy the data') + '</button><span class="dmsg" role="status"></span></div><textarea class="dcopy" readonly hidden></textarea></div>' : '') +
+      '</div>');
+
+    // Redrawing replaces the stream: keep where the viewer had scrolled it (and the page), so an update
+    // never sends the map back to the left; Follow moves it only when the stage being discussed changes.
+    var oldSc = document.querySelector('.stream-scroll'), keepX = oldSc ? oldSc.scrollLeft : 0, keepY = window.scrollY;
+    document.getElementById('app').innerHTML = h.join('');
+    var newSc = document.querySelector('.stream-scroll');
+    if (newSc) { newSc.style.scrollBehavior = 'auto'; newSc.scrollLeft = keepX; newSc.style.scrollBehavior = ''; }
+    if (Math.abs(window.scrollY - keepY) > 2) window.scrollTo(0, keepY);
+    lastData = data; lastErrors = errors;
+    layoutBadges();
+    drawLoops(data);
+    document.querySelectorAll('[data-view]').forEach(function (b) { b.onclick = function () { MODE = b.getAttribute('data-view'); setPref('vsm-view', MODE); render(lastData, lastErrors); }; });
+    var ra = document.querySelector('details.readall'); if (ra) ra.addEventListener('toggle', function () { setPref('vsm-read', ra.open ? 'open' : 'closed'); });
+    var fb = document.querySelector('button.follow');
+    if (fb) fb.onclick = function () { FOLLOW = !FOLLOW; setPref('vsm-follow', FOLLOW ? 'on' : 'off'); lastFocus = null; render(lastData, lastErrors); };
+    // Follow: bring the stage being discussed into view when it changes (or on first render), in one jump: a smooth
+    // scroll cut short by the next redraw would never reach the stage.
+    var fc = document.querySelector('.col.focus'), sc = document.querySelector('.stream-scroll');
+    if (FOLLOW && fc && sc) {
+      var key = fc.getAttribute('data-stage') + ':' + MODE;
+      // Position of the stage inside the scrolling stream (not relative to whatever offsetParent is).
+      if (key !== lastFocus) { var x = fc.getBoundingClientRect().left - sc.getBoundingClientRect().left + sc.scrollLeft; sc.scrollTo({ left: Math.max(0, x - 40), behavior: 'instant' }); lastFocus = key; }
+    }
+    if (c.title) document.title = T(c.title);
+    prev = cur; prev.__ready = true;
+    wireLang();
+  }
+
+  function setLang(l) {
+    root.setAttribute('data-lang', l);
+    try { localStorage.setItem('vsm-lang', l); } catch (e) {}
+    var fr = document.getElementById('vsm-fr'), en = document.getElementById('vsm-en');
+    if (fr) fr.setAttribute('aria-pressed', l === 'fr');
+    if (en) en.setAttribute('aria-pressed', l === 'en');
+    // Redraw when the language changes, so units in durations follow it.
+    if (lastData && l !== lastLang) { lastLang = l; render(lastData, lastErrors); }
+  }
+  var lastLang = null;
+  // Room for the AI badges, which sit out of the flow above their white box: a stacked (parallel) box gets
+  // a gap as tall as its badges; the top of every stage gets the same room, the tallest needed anywhere,
+  // so the white boxes of all stages stay centred on one axis.
+  function layoutBadges() {
+    var top = 0;
+    document.querySelectorAll('.subgrp').forEach(function (g) {
+      Array.prototype.forEach.call(g.children, function (w, i) {
+        var b = w.querySelector(':scope > .stepai'), hh = b ? b.offsetHeight + 4 : 0;
+        if (i === 0) top = Math.max(top, hh); else w.style.marginTop = hh ? hh + 'px' : '';
+      });
+    });
+    document.querySelectorAll('.box.axis .subrow').forEach(function (r) { r.style.paddingTop = (8 + top) + 'px'; });
+    // The arrows between stages follow the axis, which moves down by half of that room.
+    var st = document.querySelector('.stream'); if (st) st.style.setProperty('--axis-shift', (top / 2) + 'px');
+  }
+  // Redraw only when the width changes: a frame that sizes itself to the content must not loop.
+  var lastWidth = innerWidth;
+  window.addEventListener('resize', function () { if (!lastData || innerWidth === lastWidth) return; lastWidth = innerWidth; layoutBadges(); drawLoops(lastData); });
+  // Detailed view: one arrow per loop, drawn in an SVG over the stream. A loop back goes from the bottom of the
+  // box that sends work back, down to its own lane under all the boxes, and up into the box that redoes it;
+  // iterations on one box are a small circular arrow. Each carries its caption.
+  var LANE = 30; // vertical space per lane of loops: the arrow, then its short caption
+  var picked = null; // a loop index, or a box ref whose loops are highlighted
+  // Rework loops, in both views. Detailed: from box to box (sub-steps); macro: from stage to stage, a loop
+  // inside one stage becoming an iteration of that stage. Loops are nested like brackets: the shortest
+  // closest to the boxes, a longer one under every loop it overlaps, so a nested loop never crosses another.
+  // Each loop has its colour, a short caption (count, cost) at the start of its lane, and its full detail
+  // on hover and on click.
+  function drawLoops(data) {
+    var st = document.querySelector('.stream'); if (!st) return;
+    var old = st.querySelector('svg.loops'); if (old) old.remove();
+    // Only the loops picked (a box: the loops leaving it; a line of the list: that loop) are drawn.
+    var all = data.loops || [];
+    var macroP = MODE === 'macro';
+    var loops = all.map(function (l, j) { return { l: l, j: j }; }).filter(function (o) {
+      if (picked === null) return false;
+      if (typeof picked === 'number') return o.j === picked;
+      var a = macroP ? o.l.from : (o.l.fromStep ? o.l.from + '/' + o.l.fromStep : o.l.from), b = macroP ? o.l.to : (o.l.toStep ? o.l.to + '/' + o.l.toStep : o.l.to);
+      // A box shows the loops it sends back (its ↩ and ↻ chips), not the ones coming into it.
+      return a === picked;
+    });
+    if (!loops.length) { st.style.setProperty('--loop-room', '0px'); return; }
+    var idxOf = loops.map(function (o) { return o.j; }); loops = loops.map(function (o) { return o.l; });
+    var macro = MODE === 'macro';
+    function ends(l) { return macro ? [l.from, null, l.to, null] : [l.from, l.fromStep, l.to, l.toStep]; }
+    function isSelf(l) { var e = ends(l); return e[0] === e[2] && (e[1] || '') === (e[3] || ''); }
+    var backs = loops.filter(function (l) { return !isSelf(l); });
+    var R0 = st.getBoundingClientRect();
+    function box(sid, ref) {
+      var el = st.querySelector('[data-ref="' + (ref ? sid + '/' + ref : sid) + '"]');
+      if (!el && ref) { var stg = (data.stages || []).filter(function (x) { return x.id === sid; })[0]; var x = stg && (stg.steps || []).filter(function (y) { return y.name === ref; })[0]; if (x && x.id) el = st.querySelector('[data-ref="' + sid + '/' + x.id + '"]'); }
+      if (!el) el = st.querySelector('[data-ref="' + sid + '"]');
+      return el;
+    }
+    // Lanes first (they only need the horizontal order), then the room under the boxes, then the geometry.
+    var iv = backs.map(function (l) {
+      var e = ends(l), a = box(e[0], e[1]), b = box(e[2], e[3]); if (!a || !b) return null;
+      var ax = a.getBoundingClientRect(), bx = b.getBoundingClientRect();
+      return { l: l, lo: Math.min(ax.left, bx.left), hi: Math.max(ax.right, bx.right) };
+    }).filter(Boolean).sort(function (p, q) { return (p.hi - p.lo) - (q.hi - q.lo); });
+    var placed = [];
+    iv.forEach(function (p) {
+      p.lane = 0;
+      placed.forEach(function (q) { if (q.lo < p.hi && p.lo < q.hi) p.lane = Math.max(p.lane, q.lane + 1); });
+      placed.push(p);
+    });
+    var lanes = placed.reduce(function (m, p) { return Math.max(m, p.lane + 1); }, 0);
+    // Iterations (↻) caption on their own row under the boxes; the loops back run below it, so the two never overlap.
+    var selfRoom = lanes && loops.some(isSelf) ? 36 : 0, lane = macro ? LANE + 8 : LANE;
+    st.style.setProperty('--loop-room', (lanes ? 22 + selfRoom + lane * lanes : (loops.length ? 44 : 0)) + 'px');
+    var R = st.getBoundingClientRect();
+    function geo(el) {
+      var r = el.getBoundingClientRect(), wrap = el.closest('.stepwrap');
+      var gb = wrap ? wrap.parentElement.getBoundingClientRect().bottom - R.top : r.bottom - R.top;
+      return { l: r.left - R.left, r: r.right - R.left, t: r.top - R.top, b: r.bottom - R.top, gb: gb, cy: (r.top + r.bottom) / 2 - R.top, cx: (r.left + r.right) / 2 - R.left, covered: !!(wrap && wrap.nextElementSibling) };
+    }
+    var base = 0;
+    st.querySelectorAll(macro ? '.box[data-ref]' : '.subbox').forEach(function (el) { base = Math.max(base, el.getBoundingClientRect().bottom - R.top); });
+    var NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'loops'); svg.setAttribute('width', st.scrollWidth); svg.setAttribute('height', st.scrollHeight);
+    var defs = '<defs>' + [1, 2, 3, 4, 5, 6].map(function (n) { return '<marker id="lh' + n + '" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head c' + n + '"/></marker>'; }).join('') + '</defs>';
+    svg.innerHTML = defs;
+    var laneOf = {}; placed.forEach(function (p) { laneOf[loops.indexOf(p.l)] = p.lane; });
+    var seen = {};
+    function sn(sid, ref) { var x = (data.stages || []).filter(function (y) { return y.id === sid; })[0]; if (!x) return sid; var y2 = ref && (x.steps || []).filter(function (z) { return z.id === ref || z.name === ref; })[0]; return T(y2 ? y2.name : x.name); }
+    loops.forEach(function (l, j) {
+      var e = ends(l), ea = box(e[0], e[1]), eb = box(e[2], e[3]); if (!ea || !eb) return;
+      var J = idxOf[j], a = geo(ea), b = geo(eb), self = isSelf(l), n = (J % 6) + 1, c = dur(l.cost), path, cx, cy;
+      if (self && a.covered) {
+        // Iterations on a box with another stacked under it: on its right flank.
+        var y1 = a.cy - 10, y2 = a.cy + 10;
+        path = 'M' + a.r + ',' + y1 + ' C' + (a.r + 22) + ',' + (y1 - 6) + ' ' + (a.r + 22) + ',' + (y2 + 6) + ' ' + (a.r + 2) + ',' + y2;
+        cx = a.l; cy = a.gb + 14;
+      } else if (self) {
+        // Iterations: a small loop under the bottom-right corner, back into the box.
+        var xa = a.r - 34, xb = a.r - 12;
+        path = 'M' + xa + ',' + a.b + ' C' + xa + ',' + (a.b + 20) + ' ' + xb + ',' + (a.b + 20) + ' ' + xb + ',' + (a.b + 2);
+        cx = a.l + 4; cy = a.b + 30; // under the little loop, not across it
+      } else {
+        var ka = (seen[a.l] = (seen[a.l] || 0) + 1), kb = (seen[b.l] = (seen[b.l] || 0) + 1), y = base + 16 + selfRoom + lane * laneOf[j];
+        var sx, ex, start, end;
+        if (a.covered) { sx = a.r + 4 + 3 * ka; start = 'M' + a.r + ',' + (a.cy + 6 * ka) + ' L' + sx + ',' + (a.cy + 6 * ka) + ' L' + sx + ',' + (y - 10); }
+        else { sx = Math.min(a.r - 12, a.cx + 10 * ka); start = 'M' + sx + ',' + a.b + ' L' + sx + ',' + (y - 10); }
+        if (b.covered) { ex = b.l - 4 - 3 * kb; end = ' L' + ex + ',' + (b.cy + 6 * kb) + ' L' + (b.l - 2) + ',' + (b.cy + 6 * kb); }
+        else { ex = Math.max(b.l + 12, b.cx - 10 * kb); end = ' L' + ex + ',' + (b.b + 2); }
+        var dir = ex < sx ? -1 : 1;
+        path = start + ' Q' + sx + ',' + y + ' ' + (sx + 10 * dir) + ',' + y + ' L' + (ex - 10 * dir) + ',' + y + ' Q' + ex + ',' + y + ' ' + ex + ',' + (y - 10) + end;
+        // Caption at the start of the lane, on the side of the box that redoes the work.
+        cx = Math.min(sx, ex) + 16; cy = y + 13;
+      }
+      var short = T(l.count || '') + (l.count && c ? ' · ' : '') + (c || '') + (l.confirm ? ' · ?' : '');
+      var full = (self ? '↻ ' + sn(e[0], e[1]) : '↩ ' + sn(e[0], e[1]) + ' → ' + sn(e[2], e[3])) + (l.label ? ' — ' + T(l.label) : '') + (l.count ? ' · ' + T(l.count) : '') + (c ? ' · ' + c : '') + (l.source ? ' · ' + T(l.source) : '') + (l.confirm ? (root.getAttribute('data-lang') === 'en' ? ' · to confirm' : ' · à confirmer') : '');
+      var g = document.createElementNS(NS, 'g');
+      g.setAttribute('class', 'loop on c' + n + (l.confirm ? ' tbc' : ''));
+      g.setAttribute('data-loop', J);
+      g.setAttribute('data-ends', (e[1] ? e[0] + '/' + e[1] : e[0]) + ' ' + (e[3] ? e[2] + '/' + e[3] : e[2]));
+      g.innerHTML = '<title>' + esc(full) + '</title><path class="hit" d="' + path + '"/><path class="ln" d="' + path + '" marker-end="url(#lh' + n + ')"/>' +
+        '<text class="cap" x="' + cx + '" y="' + cy + '">' + esc((self ? '↻ ' : '') + [short, T(l.label)].filter(Boolean).join(' · ')) + '</text>';
+      svg.appendChild(g);
+    });
+    // Captions last, over every line: an arrow going down past another loop's caption never crosses its text.
+    svg.querySelectorAll('g.loop').forEach(function (g) { var tx = g.querySelector('text.cap'); if (!tx) return; var c2 = document.createElementNS(NS, 'g'); c2.setAttribute('class', g.getAttribute('class')); c2.appendChild(tx); svg.appendChild(c2); });
+    st.appendChild(svg);
+    // A long caption stays inside the map: shifted left when it would run past the right edge (measured once in the page).
+    var max = st.scrollWidth - 8;
+    svg.querySelectorAll('text.cap').forEach(function (tx) { var w = tx.getComputedTextLength(), x0 = +tx.getAttribute('x'); if (x0 + w > max) tx.setAttribute('x', Math.max(4, max - w)); });
+  }
+  // Click a box: draw its loops; click a line of the rework list: draw that loop; click again or elsewhere: none.
+  document.addEventListener('click', function (ev) {
+    var t0 = ev.target.closest ? ev.target : null; if (!t0 || !lastData) return;
+    var li = t0.closest('[data-pick]'), b = t0.closest('[data-ref]');
+    var v = li ? +li.getAttribute('data-pick') : b ? b.getAttribute('data-ref') : null;
+    if (v === null && picked === null) return;
+    if (t0.closest('button')) return;
+    picked = v === null || v === picked ? null : v;
+    render(lastData, lastErrors);
+  });
+  function wireLang() {
+    document.querySelectorAll('.lang button[data-set]').forEach(function (b) { b.onclick = function () { setLang(b.getAttribute('data-set')); }; });
+    setLang(root.getAttribute('data-lang') || 'fr');
+  }
+  // Map data out of the page: a download through the artifact viewer when it offers one, a copy otherwise.
+  var DL = null;
+  if (!window.VSM_LIVE && window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('downloads').then(function (d) { if (d) { DL = d; if (lastData) render(lastData, lastErrors); } }).catch(function () {});
+  }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('[data-dl],[data-copy]') : null; if (!b || !lastData) return;
+    var json = JSON.stringify(lastData, null, 2), msg = document.querySelector('.dmsg');
+    var say = function (fr, en) { if (msg) msg.textContent = root.getAttribute('data-lang') === 'en' ? en : fr; };
+    var name = String((lastData.case || {}).title || 'value-stream-map').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'value-stream-map';
+    if (b.hasAttribute('data-dl') && DL) {
+      DL.save({ filename: name + '.json', data: json }).then(function () { say('Enregistré.', 'Saved.'); }, function (e) {
+        if (e && e.code === 'declined') return;
+        say('Téléchargement indisponible ici : utilisez « Copier ».', 'Download unavailable here: use “Copy”.');
+      });
+      return;
+    }
+    var area = document.querySelector('.dcopy');
+    var manual = function () { if (!area) return; area.value = json; area.hidden = false; area.focus(); area.select(); say('Sélectionné : copiez (Cmd/Ctrl+C).', 'Selected: copy it (Cmd/Ctrl+C).'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(json).then(function () { say('Copié.', 'Copied.'); }, manual);
+    else manual();
+  });
+  var saved = null;
+  try { saved = localStorage.getItem('vsm-lang'); } catch (e) {}
+  root.setAttribute('data-lang', saved || 'fr');
+
+  if (window.VSM_LIVE) {
+    var refresh = function () {
+      fetch('/data', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (res) {
+        if (res.data) render(res.data, res.errors);
+        else document.getElementById('app').innerHTML = '<div class="error" role="alert">' + esc((res.errors || [])[0] || 'invalid') + '</div>';
+      });
+    };
+    refresh();
+    // The preview sends "ended" at /live-stop: stop listening, drop the live badge, say the session is over.
+    var es = new EventSource('/events'), lost = null;
+    var end = function () { if (ENDED) return; ENDED = true; es.close(); if (lastData) render(lastData, lastErrors); };
+    es.onmessage = function (e) { if (e.data === 'reload') refresh(); else if (e.data === 'ended') end(); };
+    // Server gone without a word (killed): give up after 10 s of failed reconnects.
+    es.onerror = function () { if (!lost) lost = setTimeout(end, 10000); };
+    es.onopen = function () { clearTimeout(lost); lost = null; };
+  } else {
+    var node = document.getElementById('vsm-data');
+    render(JSON.parse(node.textContent), []);
+  }
+})();
+</script>

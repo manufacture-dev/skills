@@ -1,0 +1,17 @@
+{
+  "name": "manufacture-value-stream-map",
+  "owner": { "name": "Manufacture" },
+  "metadata": {
+    "description": "Manufacture's value stream map skill for Claude Code.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "value-stream-map",
+      "source": "./",
+      "description": "Continue and complete a value stream map with an agent; validate, preview, export, import.",
+      "version": "0.1.0",
+      "category": "productivity"
+    }
+  ]
+}
