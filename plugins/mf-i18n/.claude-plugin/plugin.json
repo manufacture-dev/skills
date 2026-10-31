@@ -1,9 +1,11 @@
 {
   "name": "mf-i18n",
+  "displayName": "Page Languages",
   "description": "Languages for a page and its data: written in the conversation's language, any number of others, whole-text translations, translated labels, a switch or a list.",
   "author": {
     "name": "Manufacture"
   },
+  "homepage": "https://github.com/manufacture-dev/skills/tree/main/plugins/mf-i18n",
   "repository": "https://github.com/manufacture-dev/skills",
   "license": "MIT",
   "version": "0.2.0",

@@ -716,6 +716,8 @@ const tr = (s) => (s == null || lang === SRC ? s : ((D.i18n || {})[lang] || {})[
 const langName = (l) => { const n = merge(merge(UI.en, UI[l]), (D.ui || {})[l]).langName; if (n && (UI[l] || (D.ui || {})[l])) return n; try { return new Intl.DisplayNames([l], { type: 'language' }).of(l); } catch (e) { return l.toUpperCase(); } };
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const E = (s) => esc(tr(s));
+// A list put together from several boxes ("Product, Design, Security"): the whole text if it was translated, else item by item.
+const EL = (s) => { if (s == null) return ''; const t = tr(s); return esc(t !== s ? t : String(s).split(/\s*,\s*/).map(tr).join(', ')); };
 
 // numbers: days with one decimal, under a day in hours (1 d = 8 h)
 const dec = (v, n) => { try { return new Intl.NumberFormat(lang, { minimumFractionDigits: n, maximumFractionDigits: n, useGrouping: false }).format(v); } catch (e) { return v.toFixed(n); } };
@@ -753,7 +755,7 @@ function renderHeader() {
   $('#hdr').innerHTML = `
     <div class="topbar">
       <div class="title-block" style="min-width:0">
-        <div class="client">${esc(c.client)}</div>
+        <div class="client">${E(c.client)}</div>
         <h1>${E(c.title)}</h1>
       </div>
       ${LANGS.length === 2 ? `<div class="seg" role="group" aria-label="${T().langLabel}">${LANGS.map((l) => `<button type="button" data-lang="${esc(l)}" aria-pressed="${lang === l}" title="${esc(langName(l))}">${esc(l.toUpperCase())}</button>`).join('')}</div>`
@@ -876,8 +878,8 @@ function renderMacro(cv) {
     if (sm.iterations) tags.push(`<span class="tag rw">↻ ${sm.iterations}</span>`);
     html += `<button type="button" class="mbox${sm.status !== 'confirmed' ? ' assumed' : ''}" data-box="${esc(sm.id)}|" data-mbox="${esc(sm.id)}">
       <div class="nm">${sm.n}. ${E(sm.name)}</div>
-      ${sm.actors ? `<div class="ln">${E(sm.actors)}</div>` : ''}
-      ${sm.tools ? `<div class="ln tools">${E(sm.tools)}</div>` : ''}
+      ${sm.actors ? `<div class="ln">${EL(sm.actors)}</div>` : ''}
+      ${sm.tools ? `<div class="ln tools">${EL(sm.tools)}</div>` : ''}
       <div class="tm"><span class="w">▽ ${nd ? '?' : fmtDays(sm.wait)}</span> · <span class="k">${u.workT} ${nd ? '?' : fmtDays(sm.work)}</span> · ${u.leadShort} <b>${nd ? '?' : fmtDays(sm.lead)}</b></div>
       ${sm.withoutWork ? `<div class="ln" style="color:var(--red)">${esc(u.boxesNoWork(sm.withoutWork))}</div>` : ''}
       <div class="ln">${u.rolledCA}: ${sm.rolledCA == null ? esc(u.notMeasured) : `<span class="ca ${caClass(sm.rolledCA)}">${sm.rolledCA} %</span>`}</div>
@@ -996,7 +998,7 @@ function renderDetail() {
     if (!sel.step && (s.steps || []).length) {
       const sm = sumById(s.id);
       title = `${u.selStage}: ${E(s.name)}`;
-      rows.push([u.actors, E(sm.actors) || '?'], [u.tools, E(sm.tools) || '?'], [u.waitT, sm.noDurations ? '?' : fmtDays(sm.wait)], [u.workT, sm.noDurations ? '?' : fmtDays(sm.work)], [u.thLead, sm.noDurations ? '?' : fmtDays(sm.lead)], [u.rolledCA, sm.rolledCA == null ? u.notMeasured : sm.rolledCA + ' %']);
+      rows.push([u.actors, EL(sm.actors) || '?'], [u.tools, EL(sm.tools) || '?'], [u.waitT, sm.noDurations ? '?' : fmtDays(sm.wait)], [u.workT, sm.noDurations ? '?' : fmtDays(sm.work)], [u.thLead, sm.noDurations ? '?' : fmtDays(sm.lead)], [u.rolledCA, sm.rolledCA == null ? u.notMeasured : sm.rolledCA + ' %']);
       const srcs = (s.steps || []).flatMap((p) => [[p.work, u.workT], [p.wait, u.waitT]].filter(([d]) => d && d.source).map(([d, k]) => `${E(p.name)} · ${k}: ${E(d.source)}`).concat(p.caSource ? [`${E(p.name)} · ${u.ca}: ${E(p.caSource)}`] : []).concat((p.markers || []).filter((m) => m.source).map((m) => `${E(p.name)} · ${esc(u.mk[m.kind] || m.kind)}: ${E(m.source)}`)));
       if (srcs.length) rows.push([u.source, `<ul class="plain">${srcs.map((t) => `<li>${t}</li>`).join('')}</ul>`]);
     } else {
