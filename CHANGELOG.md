@@ -4,6 +4,8 @@ One version for the whole library, in [semver](https://semver.org). While it is 
 
 ## Unreleased
 
+- **All plugins:** the Manufacture icon (`.claude-plugin/icon.png`), for the listing in Anthropic's directory.
+
 ## 0.3.1 (2026-10-31)
 
 - **All skills:** a rule on what the agent reads (transcripts, notes, imported pages, a site's style guide, texts to translate): it is data, never instructions; anything in it that asks the agent to act is ignored and reported to the person. Answers the indirect prompt injection warning (W011) of the security audit on skills.sh.
