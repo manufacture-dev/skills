@@ -1,6 +1,6 @@
 ---
 name: value-stream-map
-description: Use when a value stream map (a JSON map of a delivery flow, from idea to production) must be continued, completed, corrected, validated, previewed or exported as a page: when someone describes or writes how work flows through their stages (who does what, how long it waits, what comes back, where AI helps), when they paste notes or answers from a workshop, or when they want their own copy of a published map to keep working on.
+description: Use when a value stream map of a delivery flow (from the request to production) must be created from scratch, continued, completed, corrected, validated, previewed or exported as a page: when someone wants to map how their work flows, describes or writes who does what, how long work waits, what comes back, where AI helps, pastes notes or answers from a workshop, or wants their own copy of a published map to keep working on.
 ---
 
 # Value stream map
@@ -26,9 +26,21 @@ node scripts/vsm.mjs import   <page.html> --output <map.json> # take the map bac
 - **From scratch.** `node scripts/vsm.mjs new <map.json> --title "<the case>" --stages "Story,Refinement,Build,Review,QA,Release"` creates an empty map with your stages, in order.
 - To share your version, `export` it and publish the page (for example as a Claude artifact). It is your own page; the one you started from stays as it was.
 
+## Building a map from scratch
+
+Map one real, recent piece of work (a feature that reached production), not the process in general.
+
+1. The case: what it is, what starts the work (`case.trigger`), when value is delivered (`case.end`), who takes part (`case.team`).
+2. The stages, as the team names them, in order: `new` with `--stages`. They stay fixed from then on.
+3. Stage by stage, in flow order: the steps inside it and who does each (`detail`), then for each step its work time, how long the work waited before it, and what it uses (tools, AI).
+4. Rework: what comes back, from which step to which, how often and at what cost (`loops`), and for each step that receives work, how much of it can be used as is (`ca`).
+5. Read the map back with the people who described it: confirm each stage, fill the durations still missing, note ideas for later in `parking`.
+
+Ask one question at a time and record only what was said; unknown stays `null`. Then go on as below.
+
 ## Continuing the map
 
-Inputs are what people say or write: workshop notes, a pasted answer, a person describing their part of the flow, a correction.
+Whether the map is new or existing, inputs are what people say or write: workshop notes, a pasted answer, a person describing their part of the flow, a correction.
 
 1. Run `outline` to see the current boxes and their ids.
 2. Decide what the input changes: a sub-step, who does it, a tool, a wait or work time, an AI use, a marker, a rework loop, a %C&A, an idea for later, a hypothesis status.

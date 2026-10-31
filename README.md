@@ -1,6 +1,6 @@
 # value-stream-map
 
-A skill for Claude to keep working on a **value stream map**: how one real piece of work travels from the request to production, with its stages and steps, wait and work times, rework loops, %C&A and AI uses. Claude completes the map from what people say or write, checks it stays consistent, and turns it into a page you can publish.
+A skill for Claude to create, or keep working on, a **value stream map**: how one real piece of work travels from the request to production, with its stages and steps, wait and work times, rework loops, %C&A and AI uses. Claude builds the map from what people say or write, step by step, checks it stays consistent, and turns it into a page you can publish.
 
 Made by [Manufacture](https://manufacture.dev).
 
@@ -19,9 +19,9 @@ Requires Node 18 or later; no other dependency.
 
 ## Use
 
-1. Get your map: on a published map page, use **Continue this map** to download or copy its data (a `.json` file); or start an empty one: `node scripts/vsm.mjs new map.json --title "<the case>" --stages "Story,Build,Review,QA,Release"`.
-2. Ask Claude, for example: *"Continue the value stream map in map.json: QA says one story in two comes back because the acceptance criteria are not testable."*
-3. Preview it while you work (`node scripts/vsm.mjs preview map.json`), then export it as a page to share (`node scripts/vsm.mjs export map.json --output map.html`).
+1. Start a map: an empty one with `node .claude/skills/value-stream-map/scripts/vsm.mjs new map.json --title "<the case>" --stages "Story,Build,Review,QA,Release"`, or an existing one: on a published map page, **Continue this map** downloads or copies its data (a `.json` file).
+2. Ask Claude, for example: *"Let's map how our last feature went to production, in map.json"*, or *"Continue the value stream map in map.json: QA says one story in two comes back because the acceptance criteria are not testable."*
+3. Preview it while you work (`… vsm.mjs preview map.json`), then export it as a page to share (`… vsm.mjs export map.json --output map.html`).
 
 What the agent follows (model, rules, commands) is in [`skills/value-stream-map/SKILL.md`](skills/value-stream-map/SKILL.md).
 
